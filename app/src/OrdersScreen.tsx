@@ -104,7 +104,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
           onClose={() => setSelected(null)}
         />
       ) : !targeting ? (
-        <p className="hint">{me?.eliminated ? 'Tu as été éliminé(e) : tu peux suivre la partie.' : 'Touche une de tes îles pour recruter, construire ou envoyer des troupes.'}</p>
+        <p className="hint">{readOnly ? 'Touche une île pour voir ses détails.' : me?.eliminated ? 'Tu as été éliminé(e) : tu peux suivre la partie.' : 'Touche une de tes îles pour recruter, construire ou envoyer des troupes.'}</p>
       ) : null}
 
       {!readOnly && !me?.eliminated && (

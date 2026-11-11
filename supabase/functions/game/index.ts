@@ -114,7 +114,7 @@ async function resolveGame(g: GameRow) {
   await db('turn_reports', {
     method: 'POST',
     headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify({ game_id: g.id, turn: g.turn, events: result.events }),
+    body: JSON.stringify({ game_id: g.id, turn: g.turn, events: result.events, state: result.state }),
   });
   return { ok: true, turn: g.turn };
 }

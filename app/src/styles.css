@@ -188,3 +188,8 @@ form.card .row input { width: 100%; }
 .help-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .help-table td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .help-table td:first-child { font-weight: 700; }
+
+/* Historique */
+.turn-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; }
+.turn-nav span { font-weight: 700; font-variant-numeric: tabular-nums; }
+.turn-nav button { min-width: 56px; }

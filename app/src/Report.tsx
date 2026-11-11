@@ -7,9 +7,11 @@ interface Props {
   events: TurnEvent[];
   title: string;
   children?: ReactNode;
+  /** Afficher le classement (seulement si la carte de ce tour est connue). */
+  showRanking?: boolean;
 }
 
-export function Report({ state, events, title, children }: Props) {
+export function Report({ state, events, title, children, showRanking = true }: Props) {
   const battles = events.filter((e) => e.kind === 'battle');
   const others = events.filter((e) => e.kind !== 'battle' && e.kind !== 'income' && e.kind !== 'order_rejected');
   const ranking = Object.values(state.players)
@@ -29,7 +31,7 @@ export function Report({ state, events, title, children }: Props) {
           {others.map((e, i) => <p key={i}>{describe(state, e)}</p>)}
         </section>
       )}
-      <section className="card">
+      {showRanking && <section className="card">
         <h2>Classement</h2>
         {ranking.map(({ p, islands }) => (
           <p key={p.id} className="rank">
@@ -37,7 +39,7 @@ export function Report({ state, events, title, children }: Props) {
             {p.eliminated ? ' (éliminé)' : ''}
           </p>
         ))}
-      </section>
+      </section>}
       {children}
     </main>
   );

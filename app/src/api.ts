@@ -193,6 +193,9 @@ export const api = {
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
       body: JSON.stringify({ game_id: id, user_id: session?.user.id, turn, orders, updated_at: new Date().toISOString() }),
     }),
+  /** Rapport d'un tour, avec la carte après ce tour (absente pour les tours joués avant l'historique). */
   report: (id: string, turn: number) =>
-    rest<{ events: TurnEvent[] }[]>(`turn_reports?game_id=eq.${id}&turn=eq.${turn}&select=events`).then((r) => r[0]?.events ?? null),
+    rest<{ events: TurnEvent[]; state: GameState | null }[]>(`turn_reports?game_id=eq.${id}&turn=eq.${turn}&select=events,state`).then(
+      (r) => r[0] ?? null,
+    ),
 };
