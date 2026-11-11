@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { duel, multiAttack } from '../src/combat.js';
+import { duel, multiAttack } from '../src/combat.ts';
 
 describe('combat simple (section 10)', () => {
   it('5 contre 3 : l\'attaquant gagne et garde 2', () => {

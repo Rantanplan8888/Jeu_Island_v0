@@ -8,8 +8,8 @@
  * 3. Les survivants d'un attaquant secondaire rentrent sur leur île de départ (s'il la possède encore).
  * 4. Production des baraques, revenus, éliminations, conditions de victoire.
  */
-import { defenseOf, distance, fortification, hasBuilding, islandsOf } from './board.js';
-import { multiAttack } from './combat.js';
+import { defenseOf, distance, fortification, hasBuilding, islandsOf } from './board.ts';
+import { multiAttack } from './combat.ts';
 import {
   BARRACKS_SOLDIERS,
   BUILDINGS,
@@ -20,7 +20,7 @@ import {
   SAWMILL_WOOD,
   SOLDIER_COST,
   SOLDIER_FORCE,
-} from './rules.js';
+} from './rules.ts';
 import type {
   BuildingType,
   GameState,
@@ -31,7 +31,7 @@ import type {
   Resources,
   TurnEvent,
   TurnResult,
-} from './types.js';
+} from './types.ts';
 
 interface Departure {
   player: PlayerId;

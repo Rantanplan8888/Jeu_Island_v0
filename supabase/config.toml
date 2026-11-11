@@ -1,0 +1,6 @@
+# Configuration minimale pour la CLI Supabase (déploiement depuis GitHub Actions).
+project_id = "island"
+
+[functions.game]
+# La fonction vérifie elle-même la session de l'utilisateur ou le secret de la tâche du matin.
+verify_jwt = false

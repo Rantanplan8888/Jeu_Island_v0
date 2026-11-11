@@ -2,9 +2,9 @@
  * Création d'une nouvelle partie : génération du plateau (déterministe à partir d'une graine).
  * La taille du plateau est proportionnelle au nombre de joueurs.
  */
-import { hexDistance } from './board.js';
-import { DEFAULT_MAX_TURNS, STARTING_RESOURCES, STARTING_SOLDIERS } from './rules.js';
-import type { GameState, Island } from './types.js';
+import { hexDistance } from './board.ts';
+import { DEFAULT_MAX_TURNS, STARTING_RESOURCES, STARTING_SOLDIERS } from './rules.ts';
+import type { GameState, Island } from './types.ts';
 
 /** Générateur pseudo-aléatoire déterministe (mulberry32). */
 export function rng(seed: number): () => number {

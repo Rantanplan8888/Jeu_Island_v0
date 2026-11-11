@@ -2,7 +2,7 @@
  * Règles de combat (sections 10 et 11 des règles).
  * Fonctions pures, sans état, faciles à tester.
  */
-import { SECONDARY_FORCE_SHARE, WINNER_LOSS_SHARE } from './rules.js';
+import { SECONDARY_FORCE_SHARE, WINNER_LOSS_SHARE } from './rules.ts';
 
 /**
  * Pertes subies par le camp vainqueur : la force du perdant,

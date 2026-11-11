@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, resolveTurn, type GameState, type Island } from '../src/index.js';
+import { createGame, resolveTurn, type GameState, type Island } from '../src/index.ts';
 
 function island(id: string, q: number, r: number, extra: Partial<Island> = {}): Island {
   return {
