@@ -1,6 +1,7 @@
 import type { GameState, IslandId, PlayerId, PlayerOrders } from '@island/engine';
 import { useMemo, useState, type ReactNode } from 'react';
 import { GameMap } from './GameMap';
+import { Help } from './Help';
 import { IslandPanel, SendDialog } from './IslandPanel';
 import { OrdersList } from './OrdersList';
 import { playerColor, playerName } from './format';
@@ -26,6 +27,20 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
   const [targeting, setTargeting] = useState<IslandId | null>(null);
   const [sending, setSending] = useState<{ from: IslandId; to: IslandId; kind: TargetKind } | null>(null);
   const [showOrders, setShowOrders] = useState(false);
+  // L'aide s'ouvre d'elle-même la toute première fois.
+  const [showHelp, setShowHelpState] = useState(() => {
+    try {
+      return !localStorage.getItem('island.helpSeen');
+    } catch {
+      return false;
+    }
+  });
+  const setShowHelp = (v: boolean) => {
+    if (!v) {
+      try { localStorage.setItem('island.helpSeen', '1'); } catch { /* rien */ }
+    }
+    setShowHelpState(v);
+  };
 
   const targets = useMemo(() => (targeting ? targetsFrom(state, pid, targeting) : null), [state, pid, targeting]);
   const left = remaining(state, pid, orders);
@@ -65,7 +80,9 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
         <span className="muted">Tour {state.turn}</span>
         <span className="res" title="Or">🪙 {left.gold}</span>
         <span className="res" title="Bois">🪵 {left.wood}</span>
+        <button className="icon" onClick={() => setShowHelp(true)} aria-label="Comment jouer">?</button>
       </header>
+      {showHelp && <Help onClose={() => setShowHelp(false)} />}
       {banner}
       {targeting && <div className="hint">Touche une île en surbrillance : rouge pour attaquer, verte pour déplacer. Touche l'île de départ pour annuler.</div>}
 

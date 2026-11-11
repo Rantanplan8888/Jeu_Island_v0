@@ -179,3 +179,12 @@ input[type='number'] { max-width: 90px; flex: none; }
 .status-draft, .status-loading, .status-saving { background: rgba(255, 183, 3, 0.15); color: var(--accent); }
 .status-error { background: rgba(255, 107, 107, 0.15); color: var(--bad); }
 form.card .row input { width: 100%; }
+
+/* Aide */
+.help-overlay { position: fixed; inset: 0; z-index: 10; overflow-y: auto; background: radial-gradient(ellipse at 50% 0%, var(--sea-light), var(--sea) 45%, var(--sea-deep)); }
+.help .row h1 { flex: 1; margin: 0; }
+.help ol { margin: 0; padding-left: 20px; line-height: 1.5; }
+.help .dot { width: 12px; height: 12px; vertical-align: -1px; margin-right: 4px; }
+.help-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.help-table td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+.help-table td:first-child { font-weight: 700; }
