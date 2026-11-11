@@ -25,7 +25,7 @@ jobs:
       - run: npm test
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.1.0
       - name: Lier le projet
         run: supabase link --project-ref "$PROJECT_REF"
       - name: Appliquer les migrations
