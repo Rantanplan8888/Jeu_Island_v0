@@ -267,7 +267,21 @@ function Lobby({ game, players, me, onBack, reload }: { game: GameRow; players: 
   );
 }
 
-type SaveState = { kind: 'loading' } | { kind: 'draft' } | { kind: 'saving' } | { kind: 'saved'; at: Date } | { kind: 'error'; message: string };
+type SaveState = { kind: 'loading' } | { kind: 'draft' } | { kind: 'saving' } | { kind: 'ready' } | { kind: 'error'; message: string };
+
+/** « minuit, nuit de mercredi à jeudi (dans 3 h 20) » */
+function formatDeadline(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const day = (x: Date) => x.toLocaleDateString('fr-FR', { weekday: 'long' });
+  const before = new Date(d.getTime() - 60_000);
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const when = time === '00:00' ? `minuit, nuit de ${day(before)} à ${day(d)}` : `${day(d)} à ${time}`;
+  const left = Math.max(0, d.getTime() - Date.now());
+  const h = Math.floor(left / 3_600_000);
+  const m = Math.floor((left % 3_600_000) / 60_000);
+  return `${when} (dans ${h ? `${h} h ` : ''}${String(m).padStart(h ? 2 : 1, '0')} min)`;
+}
 
 function draftKey(id: string, turn: number) {
   return `island.draft.${id}.${turn}`;
@@ -299,7 +313,18 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
   const [report, setReport] = useState<{ events: TurnEvent[]; state: GameState | null } | null>(null);
   const [historyMap, setHistoryMap] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [readyIds, setReadyIds] = useState<string[]>([]);
   const isHost = game.host === me;
+  const alive = Object.values(state.players).filter((p) => !p.eliminated);
+
+  // Qui est prêt : rafraîchi régulièrement.
+  useEffect(() => {
+    if (game.status !== 'running') return;
+    const load = () => api.readyPlayers(game.id).then(setReadyIds).catch(() => {});
+    load();
+    const t = setInterval(load, 20_000);
+    return () => clearInterval(t);
+  }, [game.id, game.status, game.turn]);
 
   useEffect(() => {
     let draft: PlayerOrders | null = null;
@@ -310,11 +335,11 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       /* rien */
     }
     api
-      .myOrders(game.id, game.turn)
-      .then((saved) => {
-        if (draft) { setOrdersState(draft); setSave({ kind: 'draft' }); }
-        else if (saved) { setOrdersState(saved); setSave({ kind: 'saved', at: new Date() }); }
-        else setSave({ kind: 'draft' });
+      .myOrdersRow(game.id, game.turn)
+      .then((row) => {
+        if (row?.ready && !draft) { setOrdersState(row.orders); setSave({ kind: 'ready' }); }
+        else if (draft) { setOrdersState(draft); setSave({ kind: 'draft' }); }
+        else { if (row) setOrdersState(row.orders); setSave({ kind: 'draft' }); }
       })
       .catch(() => { if (draft) setOrdersState(draft); setSave({ kind: 'draft' }); });
   }, [game.id, game.turn]);
@@ -329,6 +354,11 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
 
   const setOrders = (o: PlayerOrders) => {
     setOrdersState(o);
+    if (save.kind === 'ready') {
+      // Modifier ses ordres retire le « prêt » : le tour ne doit pas partir avec les anciens ordres.
+      api.saveOrders(game.id, game.turn, o, false).catch(() => {});
+      setReadyIds((ids) => ids.filter((x) => x !== me));
+    }
     setSave({ kind: 'draft' });
     try {
       localStorage.setItem(draftKey(game.id, game.turn), JSON.stringify(o));
@@ -340,16 +370,19 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
   const submit = async () => {
     setSave({ kind: 'saving' });
     try {
-      await api.saveOrders(game.id, game.turn, orders);
+      await api.saveOrders(game.id, game.turn, orders, true);
       try { localStorage.removeItem(draftKey(game.id, game.turn)); } catch { /* rien */ }
-      setSave({ kind: 'saved', at: new Date() });
+      setSave({ kind: 'ready' });
+      const res = await api.notifyReady(game.id);
+      if (res.resolved) reload();
+      else setReadyIds((ids) => (ids.includes(me) ? ids : [...ids, me]));
     } catch (e) {
       setSave({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     }
   };
 
   const resolveNow = async () => {
-    if (!confirm('Résoudre le tour maintenant, sans attendre demain matin ? Les ordres non envoyés seront ignorés.')) return;
+    if (!confirm('Résoudre le tour maintenant, sans attendre minuit ni que tout le monde soit prêt ? Les ordres non validés seront ignorés.')) return;
     setBusy(true);
     try {
       await api.resolveNow(game.id);
@@ -408,13 +441,20 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
     );
   }
 
+  const readyCount = alive.filter((p) => readyIds.includes(p.id)).length;
   const banner = (
     <div className={`status status-${save.kind}`}>
-      {save.kind === 'loading' && 'Chargement de tes ordres…'}
-      {save.kind === 'draft' && 'Ordres pas encore envoyés.'}
-      {save.kind === 'saving' && 'Envoi…'}
-      {save.kind === 'saved' && `✓ Ordres envoyés. Tu peux les modifier jusqu'à la résolution, demain matin.`}
-      {save.kind === 'error' && `Échec de l'envoi : ${save.message}`}
+      <div>
+        {save.kind === 'loading' && 'Chargement de tes ordres…'}
+        {save.kind === 'draft' && 'Ordres pas encore validés.'}
+        {save.kind === 'saving' && 'Envoi…'}
+        {save.kind === 'ready' && '✓ Tu es prêt. Si tu modifies tes ordres, il faudra revalider.'}
+        {save.kind === 'error' && `Échec de l'envoi : ${save.message}`}
+      </div>
+      <div className="status-sub">
+        Prêts : {readyCount}/{alive.length}
+        {game.deadline ? ` · Fin du tour : ${formatDeadline(game.deadline)}` : ''}
+      </div>
     </div>
   );
 
@@ -424,7 +464,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       pid={me}
       orders={orders}
       setOrders={setOrders}
-      submitLabel={save.kind === 'saved' ? 'Renvoyer mes ordres' : 'Envoyer mes ordres'}
+      submitLabel={save.kind === 'ready' ? 'Revalider ✓' : 'Je suis prêt ✓'}
       onSubmit={submit}
       banner={banner}
       topAction={<button className="icon" onClick={() => setView('report')} aria-label="Rapport du tour">☰</button>}

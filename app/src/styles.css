@@ -193,3 +193,5 @@ form.card .row input { width: 100%; }
 .turn-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; }
 .turn-nav span { font-weight: 700; font-variant-numeric: tabular-nums; }
 .turn-nav button { min-width: 56px; }
+.status-ready { background: rgba(125, 255, 161, 0.15); color: var(--good); }
+.status-sub { font-size: 0.78rem; opacity: 0.85; margin-top: 2px; color: var(--ink); }

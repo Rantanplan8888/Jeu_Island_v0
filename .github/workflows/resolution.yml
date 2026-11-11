@@ -1,10 +1,13 @@
 name: Résolution quotidienne
 
-# Chaque matin vers 6 h (heure de Paris en hiver, 7 h en été), résout le tour de toutes les parties en cours.
+# Chaque tour se termine à minuit, heure de Paris. Ce workflow passe juste après minuit
+# (22 h 05 UTC en été, 23 h 05 UTC en hiver) et résout les parties dont l'échéance est passée.
+# Si tous les joueurs se déclarent prêts avant, le tour est résolu tout de suite par l'appli.
 # GitHub peut décaler l'exécution de quelques minutes.
 on:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '5 22 * * *'
+    - cron: '5 23 * * *'
   workflow_dispatch:
 
 jobs:

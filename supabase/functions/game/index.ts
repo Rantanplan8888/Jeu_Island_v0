@@ -3,10 +3,12 @@
 // Actions :
 //   { action: "start",   gameId }  -> l'hôte lance la partie (génère le plateau)
 //   { action: "resolve", gameId }  -> l'hôte force la résolution du tour en cours
-//   { action: "resolve-due" }      -> appelé chaque matin (en-tête x-cron-secret) : résout toutes les parties en cours
+//   { action: "ready",   gameId }  -> un joueur se déclare prêt ; si tous les joueurs en jeu le sont, le tour est résolu
+//   { action: "resolve-due" }      -> appelé vers minuit (en-tête x-cron-secret) : résout les parties dont l'échéance est passée
 //
 // Le moteur de règles est copié dans ../_shared/engine au moment du déploiement (voir .github/workflows/deploy.yml).
 import { createGame, resolveTurn, type GameState, type PlayerOrders } from '../_shared/engine/index.ts';
+import { nextDeadline } from './deadline.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 // Clé de service : la clé « service_role » injectée par Supabase, ou une clé secrète (sb_secret_…) fournie en secret SERVICE_KEY.
@@ -64,10 +66,13 @@ interface GameRow {
   turn: number;
   state: GameState | null;
   resolved_at: string | null;
+  deadline: string | null;
 }
 
+const GAME_COLUMNS = 'id,host,status,max_turns,turn,state,resolved_at,deadline';
+
 async function loadGame(id: string): Promise<GameRow> {
-  const rows = await db<GameRow[]>(`games?id=eq.${encodeURIComponent(id)}&select=id,host,status,max_turns,turn,state,resolved_at`);
+  const rows = await db<GameRow[]>(`games?id=eq.${encodeURIComponent(id)}&select=${GAME_COLUMNS}`);
   const g = rows[0];
   if (!g) throw new HttpError(404, 'Partie introuvable');
   return g;
@@ -85,7 +90,7 @@ async function startGame(gameId: string, userId: string) {
   const state = createGame({ players: players.map((p) => ({ id: p.user_id, name: p.name })), seed, maxTurns: g.max_turns });
   const updated = await db<GameRow[]>(`games?id=eq.${gameId}&status=eq.lobby`, {
     method: 'PATCH',
-    body: JSON.stringify({ status: 'running', turn: state.turn, state, resolved_at: new Date().toISOString() }),
+    body: JSON.stringify({ status: 'running', turn: state.turn, state, resolved_at: new Date().toISOString(), deadline: nextDeadline().toISOString() }),
   });
   if (!updated.length) throw new HttpError(409, 'La partie a changé entre-temps');
   return { ok: true };
@@ -108,6 +113,7 @@ async function resolveGame(g: GameRow) {
       turn: result.state.turn,
       status: result.state.finished ? 'finished' : 'running',
       resolved_at: new Date().toISOString(),
+      deadline: result.state.finished ? null : nextDeadline().toISOString(),
     }),
   });
   if (!updated.length) return { ok: false, skipped: true };
@@ -119,11 +125,25 @@ async function resolveGame(g: GameRow) {
   return { ok: true, turn: g.turn };
 }
 
+/** Un joueur s'est déclaré prêt : si tous les joueurs encore en jeu le sont, on résout le tour tout de suite. */
+async function onReady(gameId: string, userId: string) {
+  const g = await loadGame(gameId);
+  if (g.status !== 'running' || !g.state) throw new HttpError(409, "La partie n'est pas en cours");
+  if (!g.state.players[userId]) throw new HttpError(403, 'Tu ne joues pas dans cette partie');
+  const alive = Object.values(g.state.players).filter((p) => !p.eliminated).map((p) => p.id);
+  const rows = await db<{ user_id: string }[]>(`orders?game_id=eq.${g.id}&turn=eq.${g.turn}&ready=is.true&select=user_id`);
+  const ready = new Set(rows.map((r) => r.user_id));
+  const allReady = alive.every((id) => ready.has(id));
+  if (!allReady) return { ok: true, resolved: false, ready: alive.filter((id) => ready.has(id)).length, total: alive.length };
+  const res = await resolveGame(g);
+  return { ...res, resolved: res.ok, ready: alive.length, total: alive.length };
+}
+
 async function resolveDue() {
-  // Une partie est résolue au plus une fois toutes les 20 heures par la tâche du matin.
-  const since = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
+  // Parties dont l'échéance est passée (à 2 minutes près, la tâche planifiée pouvant partir un peu tôt).
+  const limit = new Date(Date.now() + 2 * 60 * 1000).toISOString();
   const games = await db<GameRow[]>(
-    `games?status=eq.running&or=(resolved_at.is.null,resolved_at.lt.${since})&select=id,host,status,max_turns,turn,state,resolved_at`,
+    `games?status=eq.running&or=(deadline.is.null,deadline.lte.${limit})&select=${GAME_COLUMNS}`,
   );
   const results: unknown[] = [];
   for (const g of games) {
@@ -152,6 +172,8 @@ Deno.serve(async (req) => {
       case 'resolve-due':
         if (!safeEqual(req.headers.get('x-cron-secret') ?? '', CRON_SECRET)) throw new HttpError(403, 'Interdit');
         return json(await resolveDue());
+      case 'ready':
+        return json(await onReady(String(body.gameId), await currentUser(req)));
       case 'start':
         return json(await startGame(String(body.gameId), await currentUser(req)));
       case 'resolve': {
