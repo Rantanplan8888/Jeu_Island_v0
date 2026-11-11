@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSession, onSessionChange } from './api';
+import { Help } from './Help';
 import { Local } from './Local';
 import { Online } from './Online';
 import { loadLocal } from './storage';
@@ -9,6 +10,7 @@ type Screen = 'home' | 'online' | 'local';
 export function App() {
   const [screen, setScreen] = useState<Screen>(() => (getSession() ? 'online' : 'home'));
   const [, rerender] = useState(0);
+  const [help, setHelp] = useState(false);
   useEffect(() => onSessionChange(() => rerender((n) => n + 1)), []);
 
   if (screen === 'online') return <Online onExit={() => setScreen('home')} />;
@@ -19,6 +21,8 @@ export function App() {
     <main className="home">
       <h1>Island</h1>
       <p className="muted">Colonisation d'îles au tour par tour.</p>
+      <button className="ghost wide" onClick={() => setHelp(true)}>📖 Comment jouer</button>
+      {help && <Help onClose={() => setHelp(false)} />}
       <section className="card">
         <h2>Jouer en ligne</h2>
         <p className="muted">Chacun sur son téléphone. Les ordres se donnent le soir, le tour est résolu chaque matin.</p>
