@@ -33,6 +33,6 @@ jobs:
       - name: Copier le moteur de règles dans la fonction
         run: mkdir -p supabase/functions/_shared && cp -r engine/src supabase/functions/_shared/engine
       - name: Secret de la tâche du matin
-        run: supabase secrets set CRON_SECRET="${{ secrets.CRON_SECRET }}" --project-ref "$PROJECT_REF"
+        run: supabase secrets set CRON_SECRET="${{ secrets.CRON_SECRET }}" --yes
       - name: Déployer la fonction
-        run: supabase functions deploy game --project-ref "$PROJECT_REF" --no-verify-jwt --yes
+        run: supabase functions deploy game --no-verify-jwt --yes
