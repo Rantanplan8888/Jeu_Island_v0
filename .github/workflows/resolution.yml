@@ -1,0 +1,20 @@
+name: Résolution quotidienne
+
+# Chaque matin vers 6 h (heure de Paris en hiver, 7 h en été), résout le tour de toutes les parties en cours.
+# GitHub peut décaler l'exécution de quelques minutes.
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Résoudre les tours
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "https://zodxkoiuvewnpzcjtbiu.supabase.co/functions/v1/game" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -d '{"action":"resolve-due"}'

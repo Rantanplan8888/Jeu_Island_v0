@@ -169,3 +169,13 @@ input[type='number'] { max-width: 90px; flex: none; }
   border-top: 1px solid var(--line);
 }
 .actions button { flex: 1; padding: 13px; }
+
+/* Mode en ligne */
+.game-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; text-align: left; }
+.code { font-size: 2.2rem; font-weight: 800; letter-spacing: 0.25em; text-align: center; margin: 8px 0; font-variant-numeric: tabular-nums; }
+.icon { padding: 4px 10px; font-size: 1.2rem; background: transparent; }
+.status { text-align: center; font-size: 0.85rem; padding: 6px 12px; }
+.status-saved { background: rgba(125, 255, 161, 0.15); color: var(--good); }
+.status-draft, .status-loading, .status-saving { background: rgba(255, 183, 3, 0.15); color: var(--accent); }
+.status-error { background: rgba(255, 107, 107, 0.15); color: var(--bad); }
+form.card .row input { width: 100%; }

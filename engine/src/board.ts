@@ -1,5 +1,5 @@
-import type { GameState, Island } from './types.js';
-import { CAPITAL_WALL_DEFENSE, TOWER_DEFENSE } from './rules.js';
+import type { GameState, Island } from './types.ts';
+import { CAPITAL_WALL_DEFENSE, TOWER_DEFENSE } from './rules.ts';
 
 /** Distance entre deux cases d'une grille hexagonale en coordonnées axiales. */
 export function hexDistance(a: { q: number; r: number }, b: { q: number; r: number }): number {

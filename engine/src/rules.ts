@@ -2,7 +2,7 @@
  * Constantes des règles d'Island (version 5 + propositions retenues).
  * Tout ce qui est réglable se trouve ici pour pouvoir être ajusté facilement.
  */
-import type { BuildingType, Resources } from './types.js';
+import type { BuildingType, Resources } from './types.ts';
 
 export const SOLDIER_COST: Resources = { gold: 1, wood: 1 };
 export const SOLDIER_FORCE = 1;

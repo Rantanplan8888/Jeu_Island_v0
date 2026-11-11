@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 .env.*
+
+# Copie du moteur faite au déploiement
+supabase/functions/_shared/engine/
+supabase/.temp/

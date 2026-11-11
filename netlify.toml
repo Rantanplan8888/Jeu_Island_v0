@@ -6,11 +6,11 @@
   NODE_VERSION = "22"
 
 # Aucune connexion extérieure : le navigateur refuse tout autre site que celui-ci.
-# (Le domaine Supabase sera ajouté à connect-src quand le mode en ligne arrivera.)
+# Seule exception : le projet Supabase d'Island (connect-src).
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://zodxkoiuvewnpzcjtbiu.supabase.co; manifest-src 'self'; worker-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
     Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
