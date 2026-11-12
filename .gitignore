@@ -6,3 +6,4 @@ dist/
 # Copie du moteur faite au déploiement
 supabase/functions/_shared/engine/
 supabase/.temp/
+sim/resultats.json

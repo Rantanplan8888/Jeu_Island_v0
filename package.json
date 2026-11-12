@@ -9,6 +9,9 @@
     "test": "npm test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "dev": "npm run dev -w app",
-    "build": "npm run build -w app"
+    "build": "npm run build -w app",
+    "sim": "node --experimental-strip-types --no-warnings sim/run.ts",
+    "sim:variantes": "node --experimental-strip-types --no-warnings sim/sweep.ts",
+    "sim:partie": "node --experimental-strip-types --no-warnings sim/trace.ts"
   }
 }

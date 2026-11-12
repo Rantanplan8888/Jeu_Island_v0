@@ -1,5 +1,5 @@
 import type { GameState, Island } from './types.ts';
-import { CAPITAL_WALL_DEFENSE, TOWER_DEFENSE } from './rules.ts';
+import { DEFAULT_RULES, type Rules } from './rules.ts';
 
 /** Distance entre deux cases d'une grille hexagonale en coordonnées axiales. */
 export function hexDistance(a: { q: number; r: number }, b: { q: number; r: number }): number {
@@ -20,12 +20,12 @@ export function hasBuilding(island: Island, type: Island['buildings'][number]['t
 }
 
 /** Défense d'une île : soldats présents + mur de capitale (3) + tour (3). */
-export function fortification(island: Island): number {
-  return (island.isCapital ? CAPITAL_WALL_DEFENSE : 0) + (hasBuilding(island, 'tower') ? TOWER_DEFENSE : 0);
+export function fortification(island: Island, rules: Rules = DEFAULT_RULES): number {
+  return (island.isCapital ? rules.capitalWallDefense : 0) + (hasBuilding(island, 'tower') ? rules.towerDefense : 0);
 }
 
-export function defenseOf(island: Island): number {
-  return island.soldiers + fortification(island);
+export function defenseOf(island: Island, rules: Rules = DEFAULT_RULES): number {
+  return island.soldiers * rules.soldierForce + fortification(island, rules);
 }
 
 export function islandsOf(state: GameState, playerId: string): Island[] {

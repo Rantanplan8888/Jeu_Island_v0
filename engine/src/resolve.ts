@@ -10,17 +10,7 @@
  */
 import { defenseOf, distance, fortification, hasBuilding, islandsOf } from './board.ts';
 import { multiAttack } from './combat.ts';
-import {
-  BARRACKS_SOLDIERS,
-  BUILDINGS,
-  MERCENARY_COST,
-  MERCENARY_FORCE,
-  MINE_GOLD,
-  RANGE2_GOLD_PER_UNIT,
-  SAWMILL_WOOD,
-  SOLDIER_COST,
-  SOLDIER_FORCE,
-} from './rules.ts';
+import { DEFAULT_RULES, type Rules } from './rules.ts';
 import type {
   BuildingType,
   GameState,
@@ -66,16 +56,21 @@ export function attackCost(
   to: IslandId,
   soldiers: number,
   mercenaries: number,
+  rules: Rules = DEFAULT_RULES,
 ): Resources | null {
   const origin = state.islands[from];
   if (!origin) return null;
   const d = distance(state, from, to);
   if (d < 1 || d > 2) return null;
-  const range2 = d === 2 && !hasBuilding(origin, 'port') ? RANGE2_GOLD_PER_UNIT * (soldiers + mercenaries) : 0;
-  return { gold: MERCENARY_COST.gold * mercenaries + range2, wood: MERCENARY_COST.wood * mercenaries };
+  const range2 = d === 2 && !hasBuilding(origin, 'port') ? rules.range2GoldPerUnit * (soldiers + mercenaries) : 0;
+  return { gold: rules.mercenaryCost.gold * mercenaries + range2, wood: rules.mercenaryCost.wood * mercenaries };
 }
 
-export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrders>): TurnResult {
+export function resolveTurn(
+  input: GameState,
+  orders: Record<PlayerId, PlayerOrders>,
+  rules: Rules = DEFAULT_RULES,
+): TurnResult {
   const state: GameState = structuredClone(input);
   const events: TurnEvent[] = [];
   if (state.finished) return { state, events };
@@ -95,7 +90,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
       const island = state.islands[r.islandId];
       if (!island || island.owner !== pid) { reject(pid, `Recrutement impossible : l'île ${r.islandId} ne vous appartient pas.`); continue; }
       if (!isPositiveInt(r.soldiers)) { reject(pid, 'Recrutement : nombre de soldats invalide.'); continue; }
-      const cost = { gold: SOLDIER_COST.gold * r.soldiers, wood: SOLDIER_COST.wood * r.soldiers };
+      const cost = { gold: rules.soldierCost.gold * r.soldiers, wood: rules.soldierCost.wood * r.soldiers };
       if (!canPay(player, cost)) { reject(pid, `Recrutement de ${r.soldiers} soldat(s) : ressources insuffisantes.`); continue; }
       pay(player, cost);
       island.soldiers += r.soldiers;
@@ -104,7 +99,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
 
     for (const b of o.builds ?? []) {
       const island = state.islands[b.islandId];
-      const def = BUILDINGS[b.building];
+      const def = rules.buildings[b.building];
       if (!island || island.owner !== pid) { reject(pid, `Construction impossible : l'île ${b.islandId} ne vous appartient pas.`); continue; }
       if (!def) { reject(pid, 'Construction : bâtiment inconnu.'); continue; }
       if (hasBuilding(island, b.building)) { reject(pid, `${def.label} déjà présent(e) sur l'île ${island.id}.`); continue; }
@@ -136,7 +131,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
       if (!isNonNegativeInt(a.soldiers) || !isNonNegativeInt(a.mercenaries) || a.soldiers + a.mercenaries === 0) { reject(pid, 'Attaque : nombre d\'unités invalide.'); continue; }
       const available = from.soldiers - (arrived[from.id] ?? 0);
       if (a.soldiers > available) { reject(pid, `Attaque depuis ${from.id} : pas assez de soldats disponibles.`); continue; }
-      const cost = attackCost(state, from.id, to.id, a.soldiers, a.mercenaries);
+      const cost = attackCost(state, from.id, to.id, a.soldiers, a.mercenaries, rules);
       if (!cost) { reject(pid, `Attaque ${from.id} → ${to.id} : hors de portée.`); continue; }
       if (!canPay(player, cost)) { reject(pid, `Attaque ${from.id} → ${to.id} : or insuffisant.`); continue; }
       pay(player, cost);
@@ -157,25 +152,42 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
     for (const d of group) {
       const e = byPlayer.get(d.player) ?? { soldiers: 0, force: 0, origins: new Map(), destroy: undefined };
       e.soldiers += d.soldiers;
-      e.force += d.soldiers * SOLDIER_FORCE + d.mercenaries * MERCENARY_FORCE;
+      e.force += d.soldiers * rules.soldierForce + d.mercenaries * rules.mercenaryForce;
       e.origins.set(d.from, (e.origins.get(d.from) ?? 0) + d.soldiers);
       e.destroy ??= d.destroyBuilding;
       byPlayer.set(d.player, e);
     }
     const attackerIds = [...byPlayer.keys()].sort();
-    const defense = defenseOf(island);
-    const res = multiAttack(attackerIds.map((k) => ({ key: k, force: byPlayer.get(k)!.force })), defense);
+    if (rules.attackerTieBreak === 'draw') {
+      // Ordre pseudo-aléatoire mais reproductible : dépend du tour, de l'île et du joueur.
+      const draw = (pid: PlayerId) => hashString(`${state.turn}|${targetId}|${pid}`);
+      attackerIds.sort((a, b) => draw(a) - draw(b));
+    }
+    const defense = defenseOf(island, rules);
+    const res = multiAttack(attackerIds.map((k) => ({ key: k, force: byPlayer.get(k)!.force })), defense, rules);
 
     const attackersReport = attackerIds.map((pid) => {
       const e = byPlayer.get(pid)!;
       const losses = res.losses[pid] ?? 0;
-      const survivors = res.attackerWins ? Math.min(e.soldiers, e.force - losses) : 0;
+      const survivors = res.attackerWins ? Math.min(e.soldiers, Math.floor((e.force - losses) / rules.soldierForce)) : 0;
       return { player: pid, force: e.force, losses, survivors };
     });
 
     let destroyed: BuildingType | null = null;
     let defenderSoldierLosses: number;
-    if (res.attackerWins) {
+    const occupied = !rules.occupationRequiresSoldier
+      || (attackersReport.find((a) => a.player === res.winnerKey)?.survivors ?? 0) > 0;
+    if (res.attackerWins && !occupied) {
+      // Victoire sans soldat pour occuper l'île : les défenseurs sont tués, l'île ne change pas de main.
+      defenderSoldierLosses = island.soldiers;
+      island.soldiers = 0;
+      for (const a of attackersReport) {
+        if (a.player !== res.winnerKey && a.survivors > 0) {
+          const origins = [...byPlayer.get(a.player)!.origins.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+          returns.push({ player: a.player, islandId: origins[0]![0], soldiers: a.survivors });
+        }
+      }
+    } else if (res.attackerWins) {
       defenderSoldierLosses = island.soldiers;
       const winner = res.winnerKey!;
       if (island.owner !== null && island.buildings.length > 0) {
@@ -193,7 +205,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
       }
     } else {
       // Les fortifications (mur, tour) absorbent les pertes en premier.
-      defenderSoldierLosses = Math.min(island.soldiers, Math.max(0, res.defenderLosses - fortification(island)));
+      defenderSoldierLosses = Math.min(island.soldiers, Math.max(0, res.defenderLosses - fortification(island, rules)));
       island.soldiers -= defenderSoldierLosses;
     }
 
@@ -204,8 +216,8 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
       defense,
       attackers: attackersReport,
       combinedForce: res.combinedForce,
-      conquered: res.attackerWins,
-      newOwner: res.attackerWins ? res.winnerKey : island.owner,
+      conquered: res.attackerWins && occupied,
+      newOwner: res.attackerWins && occupied ? res.winnerKey : island.owner,
       defenderLosses: defenderSoldierLosses,
       destroyedBuilding: destroyed,
     });
@@ -236,15 +248,15 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
     if (island.owner === null || conquered.has(island.id)) continue;
     const barracks = island.buildings.find((b) => b.type === 'barracks');
     if (barracks && barracks.builtTurn < state.turn) {
-      island.soldiers += BARRACKS_SOLDIERS;
-      events.push({ kind: 'barracks', islandId: island.id, player: island.owner, soldiers: BARRACKS_SOLDIERS });
+      island.soldiers += rules.barracksSoldiers;
+      events.push({ kind: 'barracks', islandId: island.id, player: island.owner, soldiers: rules.barracksSoldiers });
     }
   }
 
   for (const pid of playerIds) {
     const player = state.players[pid]!;
     if (player.eliminated) continue;
-    const income = incomeOf(state, pid, conquered);
+    const income = incomeOf(state, pid, conquered, rules);
     player.resources.gold += income.gold;
     player.resources.wood += income.wood;
     if (income.gold || income.wood) events.push({ kind: 'income', player: pid, gold: income.gold, wood: income.wood });
@@ -270,15 +282,26 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
   return { state, events };
 }
 
-export function incomeOf(state: GameState, playerId: PlayerId, skip?: ReadonlySet<IslandId>): Resources {
+function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+export function incomeOf(
+  state: GameState,
+  playerId: PlayerId,
+  skip?: ReadonlySet<IslandId>,
+  rules: Rules = DEFAULT_RULES,
+): Resources {
   let gold = 0;
   let wood = 0;
   for (const island of islandsOf(state, playerId)) {
     if (skip?.has(island.id)) continue;
-    gold += island.goldSymbol ? 3 : 1;
-    wood += island.woodSymbol ? 3 : 1;
-    if (hasBuilding(island, 'mine')) gold += MINE_GOLD;
-    if (hasBuilding(island, 'sawmill')) wood += SAWMILL_WOOD;
+    gold += island.goldSymbol ? rules.symbolIncome : rules.baseIncome;
+    wood += island.woodSymbol ? rules.symbolIncome : rules.baseIncome;
+    if (hasBuilding(island, 'mine')) gold += rules.mineGold;
+    if (hasBuilding(island, 'sawmill')) wood += rules.sawmillWood;
   }
   return { gold, wood };
 }
