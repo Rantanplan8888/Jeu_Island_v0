@@ -1,4 +1,4 @@
-import { createGame, resolveTurn, type PlayerId, type PlayerOrders } from '@island/engine';
+import { createGame, eventsFor, resolveTurn, viewFor, type PlayerId, type PlayerOrders } from '@island/engine';
 import { useEffect, useState } from 'react';
 import { OrdersScreen } from './OrdersScreen';
 import { Report } from './Report';
@@ -29,7 +29,8 @@ export function Local({ onExit }: { onExit: () => void }) {
   const pid: PlayerId = alive[game.current] ?? alive[0]!;
   const orders = game.orders[pid] ?? emptyOrders();
 
-  if (showMap) {
+  // Carte finale : tout est révélé. Pendant la partie, chacun ne voit que sa propre carte.
+  if (showMap && state.finished) {
     return (
       <OrdersScreen
         state={state}
@@ -39,37 +40,59 @@ export function Local({ onExit }: { onExit: () => void }) {
         submitLabel=""
         onSubmit={() => {}}
         readOnly
-        banner={<div className="status status-saved">{state.finished ? 'Carte finale' : `Carte après le tour ${state.turn - 1}`} (consultation)</div>}
+        banner={<div className="status status-saved">Carte finale (consultation)</div>}
         topAction={<button className="icon" onClick={() => setShowMap(false)} aria-label="Retour au rapport">←</button>}
       />
     );
   }
 
-  if (game.phase === 'report' || state.finished) {
+  if (state.finished) {
     return (
-      <Report state={state} events={game.lastEvents} title={state.finished ? 'Fin de la partie' : `Résultat du tour ${state.turn - 1}`}>
-        <button className="ghost wide" onClick={() => setShowMap(true)}>{state.finished ? 'Voir la carte finale' : 'Voir la carte'}</button>
-        {state.finished ? (
-          <button className="primary wide" onClick={() => quit(false)}>Nouvelle partie</button>
-        ) : (
-          <button className="primary wide" onClick={() => setGame({ ...game, phase: 'handoff' })}>Passer au tour {state.turn}</button>
-        )}
+      <Report state={state} events={game.lastEvents} title="Fin de la partie">
+        <button className="ghost wide" onClick={() => setShowMap(true)}>Voir la carte finale</button>
+        <button className="primary wide" onClick={() => quit(false)}>Nouvelle partie</button>
       </Report>
     );
   }
 
+  if (game.phase === 'report') {
+    // Écran commun : seulement ce que tout le monde sait (éliminations).
+    const pub = game.lastEvents.filter((e) => e.kind === 'eliminated');
+    return (
+      <main className="handoff">
+        <h1>La nuit du tour {state.turn - 1} est passée</h1>
+        {pub.map((e, i) => <p key={i}>{e.kind === 'eliminated' && `${playerName(state, e.player)} n'a plus d'île : éliminé(e).`}</p>)}
+        <p className="muted">Chaque joueur découvrira en privé ce qu'il a vu cette nuit.</p>
+        <button className="primary wide" onClick={() => setGame({ ...game, phase: 'handoff' })}>Passer au tour {state.turn}</button>
+        <button className="ghost" onClick={() => quit(true)}>Abandonner la partie</button>
+      </main>
+    );
+  }
+
   if (game.phase === 'handoff') {
+    const next = state.turn > 1 ? 'news' : 'orders';
     return (
       <main className="handoff" style={{ borderColor: playerColor(state, pid) }}>
         <p className="muted">Tour {state.turn} / {state.maxTurns}</p>
         <h1 style={{ color: playerColor(state, pid) }}>{playerName(state, pid)}</h1>
         <p>Passe le téléphone à {playerName(state, pid)}. Les autres joueurs ne regardent pas !</p>
-        <button className="primary wide" onClick={() => setGame({ ...game, phase: 'orders' })}>
+        <button className="primary wide" onClick={() => setGame({ ...game, phase: next })}>
           Je suis {playerName(state, pid)}, voir mes îles
         </button>
         <button className="ghost" onClick={() => quit(true)}>Abandonner la partie</button>
         <button className="ghost" onClick={onExit}>Retour à l'accueil</button>
       </main>
+    );
+  }
+
+  const view = viewFor(state, pid);
+
+  if (game.phase === 'news') {
+    const events = eventsFor(game.lastEvents, game.prevState ?? state, state, pid);
+    return (
+      <Report state={view} events={events} title={`Ta nuit du tour ${state.turn - 1}`}>
+        <button className="primary wide" onClick={() => setGame({ ...game, phase: 'orders' })}>Donner mes ordres du tour {state.turn}</button>
+      </Report>
     );
   }
 
@@ -79,11 +102,11 @@ export function Local({ onExit }: { onExit: () => void }) {
       setGame({ ...game, current: game.current + 1, phase: 'handoff' });
     } else {
       const result = resolveTurn(state, game.orders);
-      setGame({ state: result.state, orders: {}, current: 0, phase: 'report', lastEvents: result.events });
+      setGame({ state: result.state, prevState: state, orders: {}, current: 0, phase: 'report', lastEvents: result.events });
     }
   };
 
-  return <OrdersScreen key={pid} state={state} pid={pid} orders={orders} setOrders={setOrders} submitLabel="Valider mes ordres" onSubmit={submit} />;
+  return <OrdersScreen key={pid} state={view} pid={pid} orders={orders} setOrders={setOrders} submitLabel="Valider mes ordres" onSubmit={submit} />;
 }
 
 function LocalSetup({ onStart, onBack }: { onStart: (g: LocalGame) => void; onBack: () => void }) {

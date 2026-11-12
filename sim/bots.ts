@@ -120,19 +120,24 @@ function islandValue(i: Island, rules: Rules): number {
 /** Force qu'un adversaire peut lancer contre une île (soldats voisins + mercenaires achetables). */
 function threatOn(ctx: Ctx, target: Island): number {
   const { state, me, rules } = ctx;
+  // Brouillard : l'or adverse est inconnu, on le suppose égal au sien ; une île vue de loin a ~4 soldats.
+  const fogged = state.viewer !== undefined;
+  const myGold = state.players[me]!.resources.gold;
   let worst = 0;
   for (const p of Object.values(state.players)) {
     if (p.id === me || p.eliminated) continue;
+    const gold = fogged ? myGold : p.resources.gold;
     let soldiers = 0;
     let adjacent = false;
     for (const i of owned(state, p.id)) {
+      const n = i.hidden ? 4 : i.soldiers;
       const d = hexDistance(i, target);
-      if (d === 1) { soldiers += i.soldiers; adjacent = true; }
-      else if (d === 2) { soldiers += hasBuilding(i, 'port') ? i.soldiers : Math.min(i.soldiers, Math.floor(p.resources.gold / 2)); adjacent ||= hasBuilding(i, 'port'); }
+      if (d === 1) { soldiers += n; adjacent = true; }
+      else if (d === 2) { soldiers += hasBuilding(i, 'port') ? n : Math.min(n, Math.floor(gold / 2)); adjacent ||= hasBuilding(i, 'port'); }
     }
     if (soldiers === 0 && !adjacent) continue;
-    const goldNextTurn = p.resources.gold; // l'or disponible au moment où il donne ses ordres
-    const mercs = adjacent ? Math.floor(goldNextTurn / Math.max(1, rules.mercenaryCost.gold)) : 0;
+    let mercs = adjacent ? Math.floor(gold / Math.max(1, rules.mercenaryCost.gold)) : 0;
+    if (rules.mercenariesPerSoldier !== null) mercs = Math.min(mercs, Math.floor(soldiers * rules.mercenariesPerSoldier));
     worst = Math.max(worst, soldiers * rules.soldierForce + mercs * rules.mercenaryForce);
   }
   return worst;
@@ -151,7 +156,7 @@ interface AttackPlan {
 /** Meilleure façon de prendre une île donnée (le moins d'or et de soldats perdus). */
 function planAttack(ctx: Ctx, strat: Strategy, target: Island, blitz: boolean): AttackPlan | null {
   const { state, rules, budget } = ctx;
-  const defense = defenseOf(target, rules);
+  const defense = target.hidden ? estimateDefense(target, rules) : defenseOf(target, rules);
   // Petite marge variable, comme un joueur humain qui ne calcule pas toujours au plus juste.
   const margin = jitter(`${state.turn}|${ctx.me}|${target.id}`) % 3;
   let best: AttackPlan | null = null;
@@ -210,6 +215,15 @@ function planAttack(ctx: Ctx, strat: Strategy, target: Island, blitz: boolean): 
     }
   }
   return best;
+}
+
+/** Défense supposée d'une île vue de loin (brouillard) : le haut de la fourchette de départ. */
+function estimateDefense(i: Island, rules: Rules): number {
+  const top = (xs: readonly number[]) => Math.max(...xs);
+  if (i.owner) return (i.isCapital ? rules.capitalWallDefense : 0) + 4;
+  if (i.woodSymbol && i.goldSymbol) return top(rules.bothDefenses);
+  if (i.woodSymbol || i.goldSymbol) return top(rules.bonusDefenses);
+  return top(rules.plainDefenses);
 }
 
 function jitter(s: string): number {

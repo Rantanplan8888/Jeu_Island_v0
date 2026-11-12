@@ -3,6 +3,26 @@
 Parties simulées entre bots, à 4 joueurs, avec le vrai moteur. Les variantes sont des options
 du moteur (`makeRules({...})`) ; seules celles validées sont devenues les règles par défaut.
 
+## Quatrième tour : brouillard de guerre (12 novembre)
+
+Les bots ne reçoivent plus que leur vue de la carte. Ils supposent qu'une île vue de loin a la
+défense la plus haute de sa catégorie, et que les adversaires ont autant d'or qu'eux.
+Leur façon d'estimer la menace a aussi changé, d'où des chiffres « sans brouillard » un peu
+différents du troisième tour.
+
+| Variante (800 parties) | Écart | Tête | Fins anticipées | Éliminations | Meilleures stratégies |
+|---|---|---|---|---|---|
+| Sans brouillard | 15 % | 9 | 6 % | 0,55 | Pillard 51 %, Colon 39 % |
+| **Brouillard 1 / 2 cases (adopté)** | 17 % | 12 | 1 % | 0,26 | Pillard 49 %, Colon 45 % |
+| Brouillard plus large (2 / 3 cases) | 19 % | 10 | 4 % | 0,56 | Pillard 56 %, Colon 51 % |
+| Brouillard serré (0 / 1 case) | 16 % | 16 | 1 % | 0,73 | Bâtisseur 57 %, Pillard 33 % |
+
+Constats :
+
+- Le brouillard ne casse pas le jeu : les parties vont au bout et le vainqueur se détache plus tard.
+- Il favorise un peu l'expansion et pénalise la Tortue, qui ne voit plus venir les menaces.
+- Ces bots ne savent ni éclairer ni bluffer : l'effet sur de vrais joueurs reste à observer.
+
 ## Troisième tour : revenus décroissants (12 novembre)
 
 Option `incomeDecay: { threshold, rate }`, **adoptée avec 6 îles et 10 % par île** : au-delà de `threshold` îles,

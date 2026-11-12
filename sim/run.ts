@@ -6,7 +6,7 @@
  * Mesures : taux de victoire par stratégie, durée des parties, îles en fin de partie,
  * avantage de position, ordres rejetés (pour repérer les bugs des bots).
  */
-import { createGame, makeRules, resolveTurn, rng, type GameState, type PlayerOrders, type Rules } from '../engine/src/index.ts';
+import { createGame, makeRules, resolveTurn, rng, viewFor, type GameState, type PlayerOrders, type Rules } from '../engine/src/index.ts';
 import { decide, STRATEGIES, type Strategy } from './bots.ts';
 
 export interface GameRecord {
@@ -33,7 +33,8 @@ export function playGame(seed: number, strategies: Strategy[], rules: Rules, max
   const count = (s: GameState) => players.map((p) => Object.values(s.islands).filter((i) => i.owner === p.id).length);
   while (!state.finished) {
     const orders: Record<string, PlayerOrders> = {};
-    strategies.forEach((st, i) => { orders[`P${i}`] = decide(state, `P${i}`, st, rules); });
+    // Chaque bot ne voit que sa partie de la carte (brouillard de guerre).
+    strategies.forEach((st, i) => { orders[`P${i}`] = decide(viewFor(state, `P${i}`, rules), `P${i}`, st, rules); });
     const turn = state.turn;
     const res = resolveTurn(state, orders, rules);
     state = res.state;

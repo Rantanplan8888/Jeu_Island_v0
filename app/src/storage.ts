@@ -5,8 +5,11 @@ export interface LocalGame {
   orders: Record<PlayerId, PlayerOrders>;
   /** Index du joueur (parmi les joueurs encore en jeu) qui saisit ses ordres. */
   current: number;
-  phase: 'handoff' | 'orders' | 'report';
+  /** handoff : passer le téléphone ; news : rapport personnel du joueur ; orders : ses ordres ; report : fin de nuit. */
+  phase: 'handoff' | 'news' | 'orders' | 'report';
   lastEvents: TurnEvent[];
+  /** Carte avant la dernière nuit (pour savoir ce que chaque joueur a pu voir). */
+  prevState?: GameState;
 }
 
 const KEY = 'island.local.v1';

@@ -1,5 +1,5 @@
 /** Déroulé d'une partie, tour par tour : node --experimental-strip-types sim/trace.ts seed strat1 strat2 strat3 strat4 */
-import { createGame, makeRules, resolveTurn, type GameState, type PlayerOrders } from '../engine/src/index.ts';
+import { createGame, makeRules, resolveTurn, viewFor, type GameState, type PlayerOrders } from '../engine/src/index.ts';
 import { decide, STRATEGIES } from './bots.ts';
 const [seedArg, ...names] = process.argv.slice(2);
 const strats = (names.length ? names : ['colon', 'batisseur', 'pillard', 'sprint']).map((n) => STRATEGIES[n]!);
@@ -7,7 +7,7 @@ const rules = makeRules();
 let state: GameState = createGame({ players: strats.map((_, i) => ({ id: `P${i}`, name: strats[i]!.label })), seed: Number(seedArg ?? 1), rules });
 while (!state.finished) {
   const orders: Record<string, PlayerOrders> = {};
-  strats.forEach((s, i) => { orders[`P${i}`] = decide(state, `P${i}`, s, rules); });
+  strats.forEach((s, i) => { orders[`P${i}`] = decide(viewFor(state, `P${i}`, rules), `P${i}`, s, rules); });
   const t = state.turn;
   const res = resolveTurn(state, orders, rules);
   const line = strats.map((s, i) => {

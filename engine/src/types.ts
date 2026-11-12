@@ -27,6 +27,11 @@ export interface Island {
   /** Vrai si l'île était la capitale d'un joueur au début de la partie. */
   startingCapital: boolean;
   buildings: Building[];
+  /**
+   * Vue d'un joueur (brouillard) : île vue de loin, dont les soldats et les bâtiments
+   * sont inconnus (soldiers vaut 0 et buildings est vide).
+   */
+  hidden?: boolean;
 }
 
 export interface Player {
@@ -44,6 +49,8 @@ export interface GameState {
   islands: Record<IslandId, Island>;
   winner: PlayerId | null;
   finished: boolean;
+  /** Présent dans la vue d'un joueur (brouillard) : le joueur à qui cette vue est destinée. */
+  viewer?: PlayerId;
 }
 
 export interface RecruitOrder {

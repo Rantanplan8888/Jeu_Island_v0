@@ -12,22 +12,16 @@ import { writeFileSync } from 'node:fs';
 import { makeRules, type Rules } from '../engine/src/index.ts';
 import { summarize, tournament, printSummary, type Summary } from './run.ts';
 
-const OLD: Partial<Rules> = { incomeDecay: null, occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
+const OLD: Partial<Rules> = { fog: null, incomeDecay: null, occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
 
 export const VARIANTS: { name: string; label: string; rules: Partial<Rules> }[] = [
   { name: 'anciennes', label: 'Anciennes règles (avant équilibrage)', rules: OLD },
-  { name: 'sans-decr', label: 'Règles validées sans revenus décroissants', rules: { incomeDecay: null } },
-  { name: 'actuel', label: 'Règles par défaut (avec revenus décroissants)', rules: {} },
-  { name: 'decr-6-5', label: 'Revenus décroissants : dès 6 îles, 5 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.05 } } },
-  { name: 'decr-6-10', label: 'Revenus décroissants : dès 6 îles, 10 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.1 } } },
-  { name: 'decr-8-10', label: 'Revenus décroissants : dès 8 îles, 10 % par île', rules: { incomeDecay: { threshold: 8, rate: 0.1 } } },
-  { name: 'decr-6-20', label: 'Revenus décroissants : dès 6 îles, 20 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.2 } } },
-  { name: 'decr-4-30', label: 'Revenus décroissants : dès 4 îles, 30 % par île', rules: { incomeDecay: { threshold: 4, rate: 0.3 } } },
-  { name: 'decr-6-15', label: 'Revenus décroissants : dès 6 îles, 15 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.15 } } },
-  { name: 'decr-5-25', label: 'Revenus décroissants : dès 5 îles, 25 % par île', rules: { incomeDecay: { threshold: 5, rate: 0.25 } } },
-  { name: 'decr-6-30', label: 'Revenus décroissants : dès 6 îles, 30 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.3 } } },
-  { name: 'decr-6-10+tour5', label: 'Décroissance 6/10 % + tour à +5', rules: { incomeDecay: { threshold: 6, rate: 0.1 }, towerDefense: 5 } },
+  { name: 'sans-brouillard', label: 'Règles actuelles sans brouillard', rules: { fog: null } },
+  { name: 'actuel', label: 'Règles par défaut (brouillard 1 / 2 cases)', rules: {} },
+  { name: 'brouillard-2-3', label: 'Brouillard plus large (2 / 3 cases)', rules: { fog: { fullRange: 2, partialRange: 3 } } },
+  { name: 'brouillard-0-1', label: 'Brouillard serré (seulement ses îles / 1 case)', rules: { fog: { fullRange: 0, partialRange: 1 } } },
 ];
+
 
 
 

@@ -4,10 +4,14 @@
 //   { action: "start",   gameId }  -> l'hôte lance la partie (génère le plateau)
 //   { action: "resolve", gameId }  -> l'hôte force la résolution du tour en cours
 //   { action: "ready",   gameId }  -> un joueur se déclare prêt ; si tous les joueurs en jeu le sont, le tour est résolu
+//   { action: "view", gameId, turn? } -> la partie vue par le joueur (brouillard de guerre) ;
+//                                    avec turn : le rapport de ce tour (événements visibles + carte après le tour)
 //   { action: "resolve-due" }      -> appelé vers minuit (en-tête x-cron-secret) : résout les parties dont l'échéance est passée
 //
+// Les joueurs ne lisent jamais l'état complet de la partie : seule cette fonction y a accès.
+//
 // Le moteur de règles est copié dans ../_shared/engine au moment du déploiement (voir .github/workflows/deploy.yml).
-import { createGame, resolveTurn, type GameState, type PlayerOrders } from '../_shared/engine/index.ts';
+import { createGame, eventsFor, resolveTurn, viewFor, type GameState, type PlayerOrders, type TurnEvent } from '../_shared/engine/index.ts';
 import { nextDeadline } from './deadline.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -139,6 +143,25 @@ async function onReady(gameId: string, userId: string) {
   return { ...res, resolved: res.ok, ready: alive.length, total: alive.length };
 }
 
+/** La partie (ou le rapport d'un tour) telle que la voit un joueur. */
+async function view(gameId: string, userId: string, turn: number | null) {
+  const g = await loadGame(gameId);
+  const members = await db<{ user_id: string }[]>(`game_players?game_id=eq.${g.id}&user_id=eq.${userId}&select=user_id`);
+  if (!members.length) throw new HttpError(403, 'Tu ne joues pas dans cette partie');
+  if (!g.state) return { state: null, events: [] };
+  if (turn === null) return { state: viewFor(g.state, userId), events: [] };
+  const reports = await db<{ turn: number; events: TurnEvent[]; state: GameState | null }[]>(
+    `turn_reports?game_id=eq.${g.id}&turn=in.(${turn - 1},${turn})&select=turn,events,state`,
+  );
+  const report = reports.find((r) => r.turn === turn);
+  if (!report) return { state: null, events: [] };
+  // Carte après le tour (photo, ou état actuel pour le dernier tour) et carte d'avant, pour filtrer les événements.
+  const after = report.state ?? (turn === g.turn - 1 ? g.state : null);
+  const before = reports.find((r) => r.turn === turn - 1)?.state ?? after;
+  const events = after && before ? eventsFor(report.events, before, after, userId) : report.events.filter((e) => 'player' in e && e.player === userId);
+  return { state: after ? viewFor(after, userId) : null, events };
+}
+
 async function resolveDue() {
   // Parties dont l'échéance est passée (à 2 minutes près, la tâche planifiée pouvant partir un peu tôt).
   const limit = new Date(Date.now() + 2 * 60 * 1000).toISOString();
@@ -172,6 +195,11 @@ Deno.serve(async (req) => {
       case 'resolve-due':
         if (!safeEqual(req.headers.get('x-cron-secret') ?? '', CRON_SECRET)) throw new HttpError(403, 'Interdit');
         return json(await resolveDue());
+      case 'view': {
+        const turn = body.turn === undefined || body.turn === null ? null : Number(body.turn);
+        if (turn !== null && !Number.isInteger(turn)) throw new HttpError(400, 'Tour invalide');
+        return json(await view(String(body.gameId), await currentUser(req), turn));
+      }
       case 'ready':
         return json(await onReady(String(body.gameId), await currentUser(req)));
       case 'start':
