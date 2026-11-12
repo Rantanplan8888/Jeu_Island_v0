@@ -35,6 +35,12 @@ export interface Rules {
    * totaux sont multipliés par 1 / (1 + rate × (îles − threshold)), arrondis.
    */
   incomeDecay: { threshold: number; rate: number } | null;
+  /**
+   * Brouillard de guerre (null = carte entièrement visible). Jusqu'à `fullRange` cases
+   * d'une de ses îles, on voit tout ; jusqu'à `partialRange`, on voit l'île, son propriétaire
+   * et ses symboles, mais pas ses soldats ni ses bâtiments ; au-delà, rien.
+   */
+  fog: { fullRange: number; partialRange: number } | null;
   /** Nombre maximal de mercenaires par soldat dans une attaque (null = sans limite). */
   mercenariesPerSoldier: number | null;
   /**
@@ -75,6 +81,7 @@ export const DEFAULT_RULES: Rules = {
   secondaryForceShare: 0.5,
   attackerTieBreak: 'defender',
   mercenariesPerSoldier: 1,
+  fog: { fullRange: 1, partialRange: 2 },
   incomeDecay: { threshold: 6, rate: 0.1 },
   occupationRequiresSoldier: true,
   buildings: {

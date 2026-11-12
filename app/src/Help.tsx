@@ -23,6 +23,12 @@ export function Help({ onClose }: { onClose: () => void }) {
         </section>
 
         <section className="card">
+          <h2>Brouillard</h2>
+          <p>Tu ne vois que les îles proches des tiennes. À 1 case : tout (soldats, défense, bâtiments). À 2 cases : l'île, son propriétaire et ses symboles, mais pas sa défense (<b>?</b>). Au-delà : rien.</p>
+          <p className="muted">Les ressources des autres joueurs sont secrètes, et le rapport de la nuit ne montre que les batailles que tu as pu voir. Toute la carte est révélée à la fin de la partie.</p>
+        </section>
+
+        <section className="card">
           <h2>Ton tour, étape par étape</h2>
           <ol>
             <li>Touche une de tes îles.</li>

@@ -74,7 +74,8 @@ export function IslandPanel({ state, pid, orders, islandId, setOrders, onSend, o
         <button className="close" onClick={onClose} aria-label="Fermer">✕</button>
       </header>
       <p className="muted">
-        {island.owner ? `À ${playerName(state, island.owner)}` : 'Île vierge'} · {island.soldiers} soldat(s) · défense {defenseOf(island)}
+        {island.owner ? `À ${playerName(state, island.owner)}` : 'Île vierge'} ·{' '}
+        {island.hidden ? 'trop loin : soldats, défense et bâtiments inconnus' : `${island.soldiers} soldat(s) · défense ${defenseOf(island)}`}
         <br />
         Rapporte {single.gold} or / {single.wood} bois
         {island.woodSymbol && island.goldSymbol ? ' · île luxuriante' : island.woodSymbol ? ' · symbole bois' : island.goldSymbol ? ' · symbole or' : ''}
@@ -164,7 +165,7 @@ export function SendDialog({ state, pid, orders, from, to, kind, setOrders, onDo
       </header>
       {kind === 'attack' && (
         <p className="muted">
-          Cible : {target.owner ? playerName(state, target.owner) : 'île vierge'}, défense actuelle {defense}
+          Cible : {target.owner ? playerName(state, target.owner) : 'île vierge'}, {target.hidden ? 'défense inconnue (trop loin)' : `défense actuelle ${defense}`}
           {surcharge ? ' · portée 2 : +1 or par unité' : ''}
         </p>
       )}
@@ -190,8 +191,10 @@ export function SendDialog({ state, pid, orders, from, to, kind, setOrders, onDo
       )}
       {kind === 'attack' && (
         <p>
-          Force {force} contre {defense} :{' '}
-          {force > defense ? <b className="good">victoire probable</b> : <b className="bad">insuffisant</b>}
+          {target.hidden ? <>Force {force} contre une défense inconnue</> : <>
+            Force {force} contre {defense} :{' '}
+            {force > defense ? <b className="good">victoire probable</b> : <b className="bad">insuffisant</b>}
+          </>}
           {cost && cost.gold > 0 ? ` · coût ${cost.gold} or` : ''}
           <br />
           <small className="muted">La défense peut changer d'ici la résolution (renforts, autres attaquants).</small>

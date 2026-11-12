@@ -165,6 +165,8 @@ export interface GameRow {
   deadline: string | null;
 }
 
+const GAME_COLUMNS = 'id,code,name,host,status,max_turns,turn,resolved_at,deadline';
+
 export interface PlayerRow {
   user_id: string;
   name: string;
@@ -175,7 +177,14 @@ export const api = {
     rest<{ games: Omit<GameRow, 'state'> }[]>(
       `game_players?user_id=eq.${session?.user.id}&select=games(id,code,name,host,status,max_turns,turn,resolved_at)&order=joined_at.desc`,
     ).then((rows) => rows.map((r) => r.games)),
-  game: (id: string) => rest<GameRow[]>(`games?id=eq.${id}&select=*`).then((r) => r[0] ?? null),
+  /** La partie ; la carte arrive par le serveur, filtrée par le brouillard de guerre. */
+  game: async (id: string): Promise<GameRow | null> => {
+    const rows = await rest<Omit<GameRow, 'state'>[]>(`games?id=eq.${id}&select=${GAME_COLUMNS}`);
+    const row = rows[0];
+    if (!row) return null;
+    const state = row.status === 'lobby' ? null : (await fn<{ state: GameState | null }>('view', { gameId: id })).state;
+    return { ...row, state };
+  },
   players: (id: string) => rest<PlayerRow[]>(`game_players?game_id=eq.${id}&select=user_id,name&order=joined_at.asc`),
   createGame: (name: string, playerName: string, maxTurns: number) =>
     rpc<string>('create_game', { p_name: name, p_player_name: playerName, p_max_turns: maxTurns }),
@@ -208,7 +217,5 @@ export const api = {
   notifyReady: (id: string) => fn<{ ok: boolean; resolved: boolean; ready: number; total: number }>('ready', { gameId: id }),
   /** Rapport d'un tour, avec la carte après ce tour (absente pour les tours joués avant l'historique). */
   report: (id: string, turn: number) =>
-    rest<{ events: TurnEvent[]; state: GameState | null }[]>(`turn_reports?game_id=eq.${id}&turn=eq.${turn}&select=events,state`).then(
-      (r) => r[0] ?? null,
-    ),
+    fn<{ events: TurnEvent[]; state: GameState | null }>('view', { gameId: id, turn }),
 };

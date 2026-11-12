@@ -23,7 +23,7 @@ export function Report({ state, events, title, children, showRanking = true }: P
       <h1>{title}</h1>
       <section className="card">
         <h2>Batailles</h2>
-        {battles.length === 0 ? <p className="muted">Aucune bataille cette nuit.</p> : battles.map((e, i) => <p key={i}>{describe(state, e)}</p>)}
+        {battles.length === 0 ? <p className="muted">{state.viewer ? 'Aucune bataille en vue cette nuit.' : 'Aucune bataille cette nuit.'}</p> : battles.map((e, i) => <p key={i}>{describe(state, e)}</p>)}
       </section>
       {others.length > 0 && (
         <section className="card">
@@ -31,7 +31,7 @@ export function Report({ state, events, title, children, showRanking = true }: P
           {others.map((e, i) => <p key={i}>{describe(state, e)}</p>)}
         </section>
       )}
-      {showRanking && <section className="card">
+      {showRanking && !state.viewer && <section className="card">
         <h2>Classement</h2>
         {ranking.map(({ p, islands }) => (
           <p key={p.id} className="rank">
@@ -40,6 +40,9 @@ export function Report({ state, events, title, children, showRanking = true }: P
           </p>
         ))}
       </section>}
+      {state.viewer && !state.finished && (
+        <p className="muted">Brouillard : tu ne vois que les batailles près de tes îles. Le classement sera révélé à la fin.</p>
+      )}
       {children}
     </main>
   );
