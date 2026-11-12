@@ -35,6 +35,7 @@ export function Help({ onClose }: { onClose: () => void }) {
         <section className="card">
           <h2>Ressources</h2>
           <p>Île normale : 1 or + 1 bois par tour. Symbole bois : 3 bois. Symbole or : 3 or. Capitale : 3 + 3.</p>
+          <p className="muted">Une île conquise ne rapporte rien le tour de sa conquête : elle produit à partir du tour suivant.</p>
           <table className="help-table">
             <tbody>
               <tr><td>Mine</td><td>3 bois</td><td>+2 or / tour</td></tr>

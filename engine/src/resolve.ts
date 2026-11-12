@@ -211,8 +211,11 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
     });
   }
 
+  // Îles qui changent de propriétaire ce tour : elles ne produisent rien avant le tour suivant.
+  const conquered = new Set<IslandId>();
   for (const b of battleResults) {
     const island = state.islands[b.islandId]!;
+    if (island.owner !== b.newOwner) conquered.add(island.id);
     island.owner = b.newOwner;
     island.soldiers = b.soldiers;
     island.isCapital = false;
@@ -230,7 +233,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
 
   // 4. Baraques et revenus
   for (const island of Object.values(state.islands)) {
-    if (island.owner === null) continue;
+    if (island.owner === null || conquered.has(island.id)) continue;
     const barracks = island.buildings.find((b) => b.type === 'barracks');
     if (barracks && barracks.builtTurn < state.turn) {
       island.soldiers += BARRACKS_SOLDIERS;
@@ -241,7 +244,7 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
   for (const pid of playerIds) {
     const player = state.players[pid]!;
     if (player.eliminated) continue;
-    const income = incomeOf(state, pid);
+    const income = incomeOf(state, pid, conquered);
     player.resources.gold += income.gold;
     player.resources.wood += income.wood;
     if (income.gold || income.wood) events.push({ kind: 'income', player: pid, gold: income.gold, wood: income.wood });
@@ -267,10 +270,11 @@ export function resolveTurn(input: GameState, orders: Record<PlayerId, PlayerOrd
   return { state, events };
 }
 
-export function incomeOf(state: GameState, playerId: PlayerId): Resources {
+export function incomeOf(state: GameState, playerId: PlayerId, skip?: ReadonlySet<IslandId>): Resources {
   let gold = 0;
   let wood = 0;
   for (const island of islandsOf(state, playerId)) {
+    if (skip?.has(island.id)) continue;
     gold += island.goldSymbol ? 3 : 1;
     wood += island.woodSymbol ? 3 : 1;
     if (hasBuilding(island, 'mine')) gold += MINE_GOLD;
