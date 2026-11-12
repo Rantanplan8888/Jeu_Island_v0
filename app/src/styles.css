@@ -21,7 +21,6 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background: radial-gradient(ellipse at 50% 0%, var(--sea-light), var(--sea) 45%, var(--sea-deep));
-  background-attachment: fixed;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
@@ -74,7 +73,6 @@ input[type='number'] { max-width: 90px; flex: none; }
   border-radius: 18px;
   padding: 16px;
   margin: 12px 0;
-  backdrop-filter: blur(6px);
 }
 
 /* Accueil, passage de main, rapport */
@@ -96,7 +94,8 @@ input[type='number'] { max-width: 90px; flex: none; }
 .handoff h1 { font-size: 2.4rem; }
 .rank { display: flex; align-items: center; gap: 8px; }
 
-/* Écran de jeu */
+/* Écran de jeu
+   Économie de batterie : aucune animation infinie (elles redessinent la carte 60 fois par seconde). */
 .play { height: 100%; display: flex; flex-direction: column; }
 
 .topbar {
@@ -120,13 +119,13 @@ input[type='number'] { max-width: 90px; flex: none; }
 
 .island { cursor: pointer; }
 .hex { fill: rgba(255, 255, 255, 0.03); stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
-.hex-attack { fill: rgba(255, 77, 77, 0.28); stroke: #ff4d4d; stroke-width: 2.5; animation: pulse 1.2s ease-in-out infinite; }
-.hex-move { fill: rgba(125, 255, 161, 0.22); stroke: #7dffa1; stroke-width: 2.5; animation: pulse 1.2s ease-in-out infinite; }
+.hex-attack { fill: rgba(255, 77, 77, 0.28); stroke: #ff4d4d; stroke-width: 2.5; animation: pulse 1.2s ease-in-out 3; }
+.hex-move { fill: rgba(125, 255, 161, 0.22); stroke: #7dffa1; stroke-width: 2.5; animation: pulse 1.2s ease-in-out 3; }
 @keyframes pulse { 50% { opacity: 0.55; } }
 .soldiers { font-size: 15px; font-weight: 800; text-anchor: middle; fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 3px; pointer-events: none; }
 .defense { font-size: 9px; text-anchor: middle; fill: #fff; opacity: 0.85; pointer-events: none; }
 .crown { font-size: 14px; text-anchor: middle; fill: var(--accent); paint-order: stroke; stroke: #3a2600; stroke-width: 2px; pointer-events: none; }
-.arrow { stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 7 5; animation: march 0.8s linear infinite; pointer-events: none; }
+.arrow { stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 7 5; animation: march 0.8s linear 4; pointer-events: none; }
 .arrow-attack { stroke: #ff4d4d; }
 .arrow-move { stroke: #7dffa1; }
 @keyframes march { to { stroke-dashoffset: -12; } }
