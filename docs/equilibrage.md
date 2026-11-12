@@ -3,6 +3,45 @@
 Parties simulées entre bots, à 4 joueurs, avec le vrai moteur. Les variantes sont des options
 du moteur (`makeRules({...})`) ; seules celles validées sont devenues les règles par défaut.
 
+## Troisième tour : revenus décroissants (12 novembre)
+
+Option `incomeDecay: { threshold, rate }`, **adoptée avec 6 îles et 10 % par île** : au-delà de `threshold` îles,
+tous les revenus du joueur sont multipliés par 1 / (1 + rate × (îles − threshold)), arrondis.
+
+Exemple d'un empire type (capitale, ses 5 voisines, puis des îles simples), en or par tour :
+
+| Îles | Sans règle | 6 îles / 5 % | 6 îles / 10 % | 6 îles / 15 % | 6 îles / 20 % |
+|---|---|---|---|---|---|
+| 6 | 10 | 10 | 10 | 10 | 10 |
+| 8 | 12 | 11 | 10 | 9 | 9 |
+| 10 | 14 | 12 | 10 | 9 | 8 |
+| 15 | 19 | 13 | 10 | 8 | 7 |
+
+À 10 % par île, le revenu plafonne : une île simple de plus ne rapporte plus rien, mais elle compte
+toujours pour la victoire. Au-delà de 10 %, s'agrandir fait baisser le revenu.
+
+| Variante (800 parties, règles validées) | Écart | Tête | Fins anticipées | Éliminations | Meilleures stratégies |
+|---|---|---|---|---|---|
+| Sans revenus décroissants | 13 % | 8 | 15 % | 0,83 | Colon 45 %, Pillard 41 % |
+| Dès 6 îles, 5 % | 12 % | 9 | 3 % | 0,33 | Colon 43 %, Pillard 41 % |
+| **Dès 6 îles, 10 %** | **11 %** | **10** | **1 %** | **0,20** | Pillard 40 %, Colon 39 % |
+| Dès 8 îles, 10 % | 12 % | 10 | 1 % | 0,23 | Colon 42 %, Pillard 39 % |
+| Dès 6 îles, 15 % | 10 % | 11 | 0 % | 0,16 | Pillard 39 %, Colon 35 % |
+| Dès 6 îles, 20 % | 10 % | 12 | 0 % | 0,17 | Pillard 40 %, Colon 34 % |
+| Dès 5 îles, 25 % | 9 % | 13 | 0 % | 0,14 | Bâtisseur 36 %, Colon 32 % |
+| Dès 6 îles, 30 % | 9 % | 14 | 0 % | 0,15 | Pillard 35 %, Bâtisseur 32 % |
+| Dès 4 îles, 30 % | 9 % | 14 | 0 % | 0,09 | Bâtisseur 41 %, Tortue 33 % |
+
+Constats :
+
+- Même douce, la règle supprime presque les fins anticipées et les éliminations : les parties
+  vont jusqu'au bout et le vainqueur se détache plus tard.
+- Plus la pente est forte, plus les stratégies se valent, mais au-delà de 10 % s'agrandir
+  appauvrit, ce qui risque d'être frustrant.
+- Avec une pente très forte (4 îles, 30 %), l'avantage passe aux stratégies économiques.
+- Le Sprint final et l'Équilibré restent faibles partout : c'est sans doute la limite de ces
+  deux bots plus qu'un problème de règles.
+
 ## Deuxième tour : règles validées (12 novembre)
 
 Règles adoptées après le premier tour d'analyse :

@@ -9,6 +9,7 @@ Toutes les valeurs numériques se règlent dans `engine/src/rules.ts`.
 - Départ : 3 soldats sur la capitale, 3 or, 3 bois.
 - Soldat : 1 or + 1 bois, force 1. Mercenaire : 2 or, force 3, disparaît après l'attaque.
 - Revenus : île normale 1/1, symbole bois 3 bois, symbole or 3 or, capitale 3/3.
+- Revenus décroissants (équilibrage, validé) : au-delà de 6 îles, les revenus totaux sont multipliés par 1 / (1 + 10 % × (îles − 6)), arrondis.
 - Bâtiments : mine (3 bois, +2 or), scierie (2 or, +2 bois), baraque (4 bois, +1 soldat par tour à partir du tour suivant), port (3 bois), tour (3 bois, +3 défense), université (5 bois, sans effet pour l'instant).
 - Combat : l'attaquant gagne s'il est strictement plus fort ; il perd la force du défenseur, moins 1 s'il a au moins le double.
 - Capitale capturée : perd son mur et son statut, garde ses deux symboles. Un bâtiment de l'île conquise d'un adversaire est détruit, au choix de l'attaquant.

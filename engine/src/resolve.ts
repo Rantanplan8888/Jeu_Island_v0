@@ -292,6 +292,13 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
+/** Coefficient appliqué aux revenus d'un joueur selon son nombre d'îles (1 = revenus pleins). */
+export function incomeFactor(islandCount: number, rules: Rules = DEFAULT_RULES): number {
+  if (!rules.incomeDecay) return 1;
+  const { threshold, rate } = rules.incomeDecay;
+  return 1 / (1 + rate * Math.max(0, islandCount - threshold));
+}
+
 export function incomeOf(
   state: GameState,
   playerId: PlayerId,
@@ -300,13 +307,16 @@ export function incomeOf(
 ): Resources {
   let gold = 0;
   let wood = 0;
-  for (const island of islandsOf(state, playerId)) {
+  const islands = islandsOf(state, playerId);
+  for (const island of islands) {
     if (skip?.has(island.id)) continue;
     gold += island.goldSymbol ? rules.symbolIncome : rules.baseIncome;
     wood += island.woodSymbol ? rules.symbolIncome : rules.baseIncome;
     if (hasBuilding(island, 'mine')) gold += rules.mineGold;
     if (hasBuilding(island, 'sawmill')) wood += rules.sawmillWood;
   }
+  const factor = incomeFactor(islands.length, rules);
+  if (factor < 1) return { gold: Math.round(gold * factor), wood: Math.round(wood * factor) };
   return { gold, wood };
 }
 
