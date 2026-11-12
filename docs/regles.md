@@ -23,7 +23,7 @@ Toutes les valeurs numériques se règlent dans `engine/src/rules.ts`.
    - le plus fort supporte 4/5 des pertes, les autres se partagent 1/5 au prorata de leur force ;
    - chaque part est arrondie au-dessus et plafonnée à la force de l'attaquant ;
    - les survivants d'un attaquant secondaire rentrent sur leur île de départ (s'il la possède encore) ;
-   - à force égale entre deux attaquants, l'identifiant du joueur départage.
+   - à force égale entre les deux attaquants les plus forts, l'attaque échoue et l'île reste à son propriétaire (équilibrage, validé).
 5. **Victoire (proposition)** : partie de 30 tours ; à la fin, le joueur qui a le plus d'îles gagne (puis le plus de soldats). Victoire anticipée s'il ne reste qu'un joueur ou si un joueur possède toutes les capitales de départ.
 6. **Ressources (proposition)** : une réserve commune par joueur.
 7. **Égalité de force (proposition)** : le défenseur gagne.
@@ -31,10 +31,13 @@ Toutes les valeurs numériques se règlent dans `engine/src/rules.ts`.
 9. **Recrutement et déplacements (proposition)** : on recrute sur n'importe laquelle de ses îles. On peut déplacer des soldats vers une de ses îles adjacente (portée 2 avec un port). Des soldats déplacés ne peuvent pas attaquer le même tour.
 10. **Ordre de résolution (proposition)** : recrutements, constructions, déplacements, départ des attaques, batailles simultanées, production des baraques, revenus. Les soldats partis attaquer ne défendent pas leur île cette nuit-là.
 11. **Survivants et mercenaires** : après une victoire, les pertes sont d'abord absorbées par les mercenaires ; restent sur l'île conquise au plus le nombre de soldats envoyés.
+12. **Occupation (équilibrage, validé)** : l'île n'est prise que si au moins un soldat survit pour l'occuper. Sinon les défenseurs sont tués, mais l'île reste à son propriétaire (ou neutre).
+13. **Mercenaires (équilibrage, validé)** : pas plus de mercenaires que de soldats dans une même attaque.
 
 ## Plateau
 
 Grille hexagonale ; deux îles sont adjacentes si elles sont sur des cases voisines.
 Le plateau compte environ 12 cases par joueur, dont environ 60 % portent une île.
-Les capitales sont réparties le plus loin possible les unes des autres et ont toujours des îles voisines.
+Jusqu'à 8 joueurs, les capitales sont placées à intervalles réguliers sur un anneau autour du centre (même distance au centre et entre voisines). Au-delà, elles sont réparties le plus loin possible les unes des autres. Elles ont toujours les mêmes 5 îles voisines.
+Parmi 24 plateaux tirés à partir de la graine, on garde celui où les îles libres sont le mieux réparties entre les capitales.
 Les îles vierges ont plus de soldats quand elles sont loin des capitales ou qu'elles ont des symboles.

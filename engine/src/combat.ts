@@ -2,7 +2,7 @@
  * Règles de combat (sections 10 et 11 des règles).
  * Fonctions pures, sans état, faciles à tester.
  */
-import { SECONDARY_FORCE_SHARE, WINNER_LOSS_SHARE } from './rules.ts';
+import { DEFAULT_RULES, type Rules } from './rules.ts';
 
 /**
  * Pertes subies par le camp vainqueur : la force du perdant,
@@ -64,19 +64,29 @@ export interface MultiAttackResult {
  * - Le plus fort supporte 4/5 des pertes ; les autres se partagent 1/5
  *   au prorata de leur force. Chaque part est arrondie au-dessus et plafonnée
  *   à la force de l'attaquant.
- * - En cas d'égalité de force entre attaquants, l'ordre fourni départage
- *   (l'appelant fournit un ordre déterministe).
+ * - Si deux attaquants ont la même force en tête, l'attaque échoue comme une attaque ratée
+ *   (le défenseur garde l'île). Avec un autre départage dans les règles, l'ordre fourni
+ *   par l'appelant désigne le vainqueur.
  * Avec un seul attaquant, le résultat est identique à `duel`.
  */
-export function multiAttack(attackers: AttackerInput[], defenseForce: number): MultiAttackResult {
+export function multiAttack(attackers: AttackerInput[], defenseForce: number, rules: Rules = DEFAULT_RULES): MultiAttackResult {
   const sorted = [...attackers].sort((a, b) => b.force - a.force);
   const [first, ...others] = sorted;
   if (!first) {
     return { combinedForce: 0, attackerWins: false, winnerKey: null, losses: {}, defenderLosses: 0 };
   }
   const othersForce = others.reduce((s, a) => s + a.force, 0);
-  const combinedForce = Math.floor(first.force + SECONDARY_FORCE_SHARE * othersForce);
+  const combinedForce = Math.floor(first.force + rules.secondaryForceShare * othersForce);
   const result = duel(combinedForce, defenseForce);
+  // Deux attaquants à égalité en tête : le défenseur garde l'île, l'attaque échoue.
+  const tied = rules.attackerTieBreak === 'defender' && others[0] !== undefined && others[0].force === first.force;
+  if (tied && result.attackerWins) {
+    return {
+      combinedForce, attackerWins: false, winnerKey: null,
+      losses: Object.fromEntries(sorted.map((a) => [a.key, a.force])),
+      defenderLosses: Math.min(defenseForce, winnerLosses(defenseForce, combinedForce)),
+    };
+  }
   const losses: Record<string, number> = {};
 
   if (!result.attackerWins) {
@@ -88,8 +98,8 @@ export function multiAttack(attackers: AttackerInput[], defenseForce: number): M
   if (others.length === 0) {
     losses[first.key] = Math.min(first.force, total);
   } else {
-    losses[first.key] = Math.min(first.force, Math.ceil(total * WINNER_LOSS_SHARE));
-    const othersShare = total * (1 - WINNER_LOSS_SHARE);
+    losses[first.key] = Math.min(first.force, Math.ceil(total * rules.winnerLossShare));
+    const othersShare = total * (1 - rules.winnerLossShare);
     for (const a of others) {
       const share = othersForce > 0 ? (othersShare * a.force) / othersForce : 0;
       losses[a.key] = Math.min(a.force, Math.ceil(share - 1e-9));
