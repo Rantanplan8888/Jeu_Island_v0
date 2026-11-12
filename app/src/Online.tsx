@@ -188,7 +188,8 @@ function GameView({ id, onBack }: { id: string; onBack: () => void }) {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 30_000);
+    // Rafraîchissement seulement quand l'appli est à l'écran (économie de batterie et de données).
+    const t = setInterval(() => document.visibilityState === 'visible' && load(), 60_000);
     const onVisible = () => document.visibilityState === 'visible' && load();
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -322,8 +323,13 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
     if (game.status !== 'running') return;
     const load = () => api.readyPlayers(game.id).then(setReadyIds).catch(() => {});
     load();
-    const t = setInterval(load, 20_000);
-    return () => clearInterval(t);
+    const t = setInterval(() => document.visibilityState === 'visible' && load(), 30_000);
+    const onVisible = () => document.visibilityState === 'visible' && load();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [game.id, game.status, game.turn]);
 
   useEffect(() => {
