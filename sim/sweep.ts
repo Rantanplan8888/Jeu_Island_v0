@@ -13,22 +13,21 @@ import { makeRules, type Rules } from '../engine/src/index.ts';
 import { summarize, tournament, printSummary, type Summary } from './run.ts';
 
 const OLD: Partial<Rules> = { occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
-const B = makeRules().buildings;
 
 export const VARIANTS: { name: string; label: string; rules: Partial<Rules> }[] = [
   { name: 'anciennes', label: 'Anciennes règles (avant équilibrage)', rules: OLD },
   { name: 'actuel', label: 'Règles équilibrées (par défaut)', rules: {} },
-  { name: 'merc3or', label: 'Mercenaire à 3 or', rules: { mercenaryCost: { gold: 3, wood: 0 } } },
-  { name: 'merc-demi', label: '1 mercenaire pour 2 soldats', rules: { mercenariesPerSoldier: 0.5 } },
-  { name: 'mine1', label: 'Mine à +1 or', rules: { mineGold: 1 } },
-  { name: 'neutres+2', label: 'Îles neutres plus fortes (+2)', rules: { plainDefenses: [4, 5, 6], bonusDefenses: [7, 8], bothDefenses: [10, 11, 12], buildingDefenses: [6, 7, 8] } },
-  { name: 'mur5', label: 'Mur de capitale à 5', rules: { capitalWallDefense: 5 } },
-  { name: 'tour5', label: 'Tour à +5', rules: { towerDefense: 5 } },
-  { name: 'tour2bois', label: 'Tour à 2 bois', rules: { buildings: { ...B, tower: { cost: { gold: 0, wood: 2 }, label: 'Tour' } } } },
-  { name: 'depart5', label: '5 soldats au départ', rules: { startingSoldiers: 5 } },
-  { name: 'revenu-ile2', label: 'Symbole à +2 au lieu de +3', rules: { symbolIncome: 2 } },
-  { name: 'secondaire0', label: 'Attaquants secondaires sans effet', rules: { secondaryForceShare: 0 } },
+  { name: 'decr-6-5', label: 'Revenus décroissants : dès 6 îles, 5 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.05 } } },
+  { name: 'decr-6-10', label: 'Revenus décroissants : dès 6 îles, 10 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.1 } } },
+  { name: 'decr-8-10', label: 'Revenus décroissants : dès 8 îles, 10 % par île', rules: { incomeDecay: { threshold: 8, rate: 0.1 } } },
+  { name: 'decr-6-20', label: 'Revenus décroissants : dès 6 îles, 20 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.2 } } },
+  { name: 'decr-4-30', label: 'Revenus décroissants : dès 4 îles, 30 % par île', rules: { incomeDecay: { threshold: 4, rate: 0.3 } } },
+  { name: 'decr-6-15', label: 'Revenus décroissants : dès 6 îles, 15 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.15 } } },
+  { name: 'decr-5-25', label: 'Revenus décroissants : dès 5 îles, 25 % par île', rules: { incomeDecay: { threshold: 5, rate: 0.25 } } },
+  { name: 'decr-6-30', label: 'Revenus décroissants : dès 6 îles, 30 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.3 } } },
+  { name: 'decr-6-10+tour5', label: 'Décroissance 6/10 % + tour à +5', rules: { incomeDecay: { threshold: 6, rate: 0.1 }, towerDefense: 5 } },
 ];
+
 
 
 interface Job { name: string; rules: Partial<Rules>; games: number }

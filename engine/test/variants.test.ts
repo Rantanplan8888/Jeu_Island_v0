@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULES, createGame, makeRules, resolveTurn, type GameState, type Island } from '../src/index.ts';
+import { DEFAULT_RULES, createGame, incomeFactor, incomeOf, makeRules, resolveTurn, type GameState, type Island } from '../src/index.ts';
 
 function island(id: string, q: number, r: number, extra: Partial<Island> = {}): Island {
   return {
@@ -99,5 +99,16 @@ describe('règles d\'équilibrage et variantes', () => {
     }
     expect(winsB).toBeGreaterThan(5);
     expect(winsB).toBeLessThan(35);
+  });
+
+  it('revenus décroissants au-delà d\'un nombre d\'îles', () => {
+    const islands = [capital('CA', 0, 0, 'A'), capital('CB', 9, 0, 'B')];
+    for (let k = 1; k <= 9; k++) islands.push(island(`N${k}`, 0, k, { owner: 'A' }));
+    const s = game(islands); // A : capitale (3/3) + 9 îles (1/1) = 12/12 sur 10 îles
+    const rules = makeRules({ incomeDecay: { threshold: 6, rate: 0.1 } });
+    expect(incomeOf(s, 'A')).toEqual({ gold: 12, wood: 12 });
+    expect(incomeFactor(10, rules)).toBeCloseTo(1 / 1.4);
+    expect(incomeOf(s, 'A', undefined, rules)).toEqual({ gold: 9, wood: 9 }); // 12 / 1,4 = 8,6
+    expect(incomeOf(s, 'B', undefined, rules)).toEqual({ gold: 3, wood: 3 });
   });
 });
