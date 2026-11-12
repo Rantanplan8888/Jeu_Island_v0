@@ -12,11 +12,12 @@ import { writeFileSync } from 'node:fs';
 import { makeRules, type Rules } from '../engine/src/index.ts';
 import { summarize, tournament, printSummary, type Summary } from './run.ts';
 
-const OLD: Partial<Rules> = { occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
+const OLD: Partial<Rules> = { incomeDecay: null, occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
 
 export const VARIANTS: { name: string; label: string; rules: Partial<Rules> }[] = [
   { name: 'anciennes', label: 'Anciennes règles (avant équilibrage)', rules: OLD },
-  { name: 'actuel', label: 'Règles équilibrées (par défaut)', rules: {} },
+  { name: 'sans-decr', label: 'Règles validées sans revenus décroissants', rules: { incomeDecay: null } },
+  { name: 'actuel', label: 'Règles par défaut (avec revenus décroissants)', rules: {} },
   { name: 'decr-6-5', label: 'Revenus décroissants : dès 6 îles, 5 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.05 } } },
   { name: 'decr-6-10', label: 'Revenus décroissants : dès 6 îles, 10 % par île', rules: { incomeDecay: { threshold: 6, rate: 0.1 } } },
   { name: 'decr-8-10', label: 'Revenus décroissants : dès 8 îles, 10 % par île', rules: { incomeDecay: { threshold: 8, rate: 0.1 } } },

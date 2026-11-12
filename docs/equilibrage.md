@@ -5,7 +5,7 @@ du moteur (`makeRules({...})`) ; seules celles validées sont devenues les règl
 
 ## Troisième tour : revenus décroissants (12 novembre)
 
-Option `incomeDecay: { threshold, rate }` (désactivée par défaut) : au-delà de `threshold` îles,
+Option `incomeDecay: { threshold, rate }`, **adoptée avec 6 îles et 10 % par île** : au-delà de `threshold` îles,
 tous les revenus du joueur sont multipliés par 1 / (1 + rate × (îles − threshold)), arrondis.
 
 Exemple d'un empire type (capitale, ses 5 voisines, puis des îles simples), en or par tour :

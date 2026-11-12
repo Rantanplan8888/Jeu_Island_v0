@@ -38,7 +38,7 @@ describe('règles d\'équilibrage et variantes', () => {
   });
 
   // Règles d'avant l'équilibrage, pour comparer.
-  const old = makeRules({ occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' });
+  const old = makeRules({ incomeDecay: null, occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' });
 
   it('occupation : des mercenaires seuls tuent les défenseurs sans prendre l\'île', () => {
     const s = game([capital('CA', 0, 0, 'A'), island('N', 1, 0, { soldiers: 2 }), capital('CB', 5, 0, 'B')]);
@@ -106,7 +106,8 @@ describe('règles d\'équilibrage et variantes', () => {
     for (let k = 1; k <= 9; k++) islands.push(island(`N${k}`, 0, k, { owner: 'A' }));
     const s = game(islands); // A : capitale (3/3) + 9 îles (1/1) = 12/12 sur 10 îles
     const rules = makeRules({ incomeDecay: { threshold: 6, rate: 0.1 } });
-    expect(incomeOf(s, 'A')).toEqual({ gold: 12, wood: 12 });
+    expect(incomeOf(s, 'A', undefined, makeRules({ incomeDecay: null }))).toEqual({ gold: 12, wood: 12 });
+    expect(incomeOf(s, 'A')).toEqual({ gold: 9, wood: 9 }); // règle par défaut
     expect(incomeFactor(10, rules)).toBeCloseTo(1 / 1.4);
     expect(incomeOf(s, 'A', undefined, rules)).toEqual({ gold: 9, wood: 9 }); // 12 / 1,4 = 8,6
     expect(incomeOf(s, 'B', undefined, rules)).toEqual({ gold: 3, wood: 3 });

@@ -31,7 +31,7 @@ export interface Rules {
    */
   attackerTieBreak: 'defender' | 'playerId' | 'draw';
   /**
-   * Revenus décroissants (null = désactivé) : au-delà de `threshold` îles, les revenus
+   * Revenus décroissants (null = désactivé ; par défaut dès 6 îles, 10 % par île) : au-delà de `threshold` îles, les revenus
    * totaux sont multipliés par 1 / (1 + rate × (îles − threshold)), arrondis.
    */
   incomeDecay: { threshold: number; rate: number } | null;
@@ -75,7 +75,7 @@ export const DEFAULT_RULES: Rules = {
   secondaryForceShare: 0.5,
   attackerTieBreak: 'defender',
   mercenariesPerSoldier: 1,
-  incomeDecay: null,
+  incomeDecay: { threshold: 6, rate: 0.1 },
   occupationRequiresSoldier: true,
   buildings: {
     mine: { cost: { gold: 0, wood: 3 }, label: 'Mine' },
