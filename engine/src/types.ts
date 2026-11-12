@@ -32,6 +32,11 @@ export interface Island {
    * sont inconnus (soldiers vaut 0 et buildings est vide).
    */
   hidden?: boolean;
+  /**
+   * Vue d'un joueur : île vue de très loin, dont seul le propriétaire est connu
+   * (pas de symboles ni de statut de capitale ; `hidden` est aussi vrai).
+   */
+  remote?: boolean;
 }
 
 export interface Player {
@@ -51,6 +56,8 @@ export interface GameState {
   finished: boolean;
   /** Présent dans la vue d'un joueur (brouillard) : le joueur à qui cette vue est destinée. */
   viewer?: PlayerId;
+  /** Îles espionnées pendant la dernière nuit, par joueur : visibles en entier jusqu'à la nuit suivante. */
+  spied?: Record<PlayerId, IslandId[]>;
 }
 
 export interface RecruitOrder {
@@ -84,6 +91,8 @@ export interface PlayerOrders {
   builds?: BuildOrder[];
   moves?: MoveOrder[];
   attacks?: AttackOrder[];
+  /** Île à espionner cette nuit (une par tour) : sa défense et ses bâtiments seront connus au matin. */
+  spy?: IslandId;
 }
 
 export type TurnEvent =
@@ -104,6 +113,15 @@ export type TurnEvent =
       destroyedBuilding: BuildingType | null;
     }
   | { kind: 'income'; player: PlayerId; gold: number; wood: number }
+  | {
+      kind: 'spied';
+      player: PlayerId;
+      islandId: IslandId;
+      owner: PlayerId | null;
+      soldiers: number;
+      defense: number;
+      buildings: BuildingType[];
+    }
   | { kind: 'barracks'; islandId: IslandId; player: PlayerId; soldiers: number }
   | { kind: 'eliminated'; player: PlayerId }
   | { kind: 'game_over'; winner: PlayerId | null };

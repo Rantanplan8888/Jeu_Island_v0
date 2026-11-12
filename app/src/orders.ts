@@ -1,5 +1,6 @@
 import {
   BUILDINGS,
+  DEFAULT_RULES,
   SOLDIER_COST,
   attackCost,
   distance,
@@ -12,12 +13,17 @@ import {
   type Resources,
 } from '@island/engine';
 
-export function emptyOrders(): Required<PlayerOrders> {
+/** Ordres avec toutes les listes présentes (l'espion reste facultatif). */
+export type FullOrders = Required<Omit<PlayerOrders, 'spy'>> & Pick<PlayerOrders, 'spy'>;
+
+export function emptyOrders(): FullOrders {
   return { recruits: [], builds: [], moves: [], attacks: [] };
 }
 
-export function normalize(o: PlayerOrders | undefined): Required<PlayerOrders> {
-  return { recruits: o?.recruits ?? [], builds: o?.builds ?? [], moves: o?.moves ?? [], attacks: o?.attacks ?? [] };
+export function normalize(o: PlayerOrders | undefined): FullOrders {
+  const n: FullOrders = { recruits: o?.recruits ?? [], builds: o?.builds ?? [], moves: o?.moves ?? [], attacks: o?.attacks ?? [] };
+  if (o?.spy !== undefined) n.spy = o.spy;
+  return n;
 }
 
 /** Ressources dépensées par les ordres d'un joueur. */
@@ -31,6 +37,7 @@ export function spent(state: GameState, orders: PlayerOrders): Resources {
     const c = attackCost(state, a.from, a.to, a.soldiers, a.mercenaries);
     if (c) { gold += c.gold; wood += c.wood; }
   }
+  if (o.spy !== undefined && DEFAULT_RULES.spyCost) { gold += DEFAULT_RULES.spyCost.gold; wood += DEFAULT_RULES.spyCost.wood; }
   return { gold, wood };
 }
 

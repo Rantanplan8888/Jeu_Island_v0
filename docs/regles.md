@@ -34,7 +34,8 @@ Toutes les valeurs numériques se règlent dans `engine/src/rules.ts`.
 11. **Survivants et mercenaires** : après une victoire, les pertes sont d'abord absorbées par les mercenaires ; restent sur l'île conquise au plus le nombre de soldats envoyés.
 12. **Occupation (équilibrage, validé)** : l'île n'est prise que si au moins un soldat survit pour l'occuper. Sinon les défenseurs sont tués, mais l'île reste à son propriétaire (ou neutre).
 13. **Mercenaires (équilibrage, validé)** : pas plus de mercenaires que de soldats dans une même attaque.
-14. **Brouillard de guerre (validé)** : chaque joueur voit tout à 1 case de ses îles ; à 2 cases, il voit l'île, son propriétaire et ses symboles, mais ni ses soldats ni ses bâtiments ; au-delà, rien. Les ressources des autres joueurs sont cachées, le rapport de nuit ne montre que les batailles visibles ou qui le concernent. Toute la carte est révélée à la fin de la partie ; un joueur éliminé voit tout. En ligne, le serveur ne transmet à chaque joueur que sa vue.
+14. **Brouillard de guerre (validé)** : chaque joueur voit tout à 1 case de ses îles ; à 2 cases, il voit l'île, son propriétaire et ses symboles, mais ni ses soldats ni ses bâtiments ; au-delà, seulement le propriétaire de chaque île (neutre ou joueur), sans symboles ni statut de capitale. Les ressources des autres joueurs sont cachées, le rapport de nuit ne montre que les batailles visibles ou qui le concernent. Toute la carte est révélée à la fin de la partie ; un joueur éliminé voit tout.
+15. **Espion (validé)** : 1 or, une île au choix par tour. Au matin, le joueur reçoit les soldats, la défense et les bâtiments de l'île (après les batailles de la nuit) et la voit en entier jusqu'à la nuit suivante. Les autres joueurs ne savent pas qu'elle a été espionnée. En ligne, le serveur ne transmet à chaque joueur que sa vue.
 
 ## Plateau
 

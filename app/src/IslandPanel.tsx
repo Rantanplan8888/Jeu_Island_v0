@@ -75,13 +75,27 @@ export function IslandPanel({ state, pid, orders, islandId, setOrders, onSend, o
       </header>
       <p className="muted">
         {island.owner ? `À ${playerName(state, island.owner)}` : 'Île vierge'} ·{' '}
-        {island.hidden ? 'trop loin : soldats, défense et bâtiments inconnus' : `${island.soldiers} soldat(s) · défense ${defenseOf(island)}`}
+        {island.remote ? 'très loin : on ne connaît que son propriétaire'
+          : island.hidden ? 'trop loin : soldats, défense et bâtiments inconnus'
+          : `${island.soldiers} soldat(s) · défense ${defenseOf(island)}`}
         <br />
-        Rapporte {single.gold} or / {single.wood} bois
+        {island.remote ? 'Richesses inconnues' : <>Rapporte {single.gold} or / {single.wood} bois</>}
         {island.woodSymbol && island.goldSymbol ? ' · île luxuriante' : island.woodSymbol ? ' · symbole bois' : island.goldSymbol ? ' · symbole or' : ''}
       </p>
       {island.buildings.length > 0 && (
         <p>Bâtiments : {island.buildings.map((b) => buildingLabel(b.type)).join(', ')}</p>
+      )}
+
+      {!mine && (island.hidden || o.spy === islandId) && state.players[pid] && !state.players[pid]!.eliminated && (
+        o.spy === islandId ? (
+          <button className="ghost wide" onClick={() => { const { spy: _, ...rest } = o; setOrders(rest); }}>
+            Espion prévu cette nuit ✓ (annuler)
+          </button>
+        ) : (
+          <button className="ghost wide" disabled={left.gold < 1 && o.spy === undefined} onClick={() => setOrders({ ...o, spy: islandId })}>
+            {o.spy === undefined ? "Envoyer un espion (1 or) : défense et bâtiments connus demain matin" : "Envoyer l'espion ici plutôt (1 seul par tour)"}
+          </button>
+        )
       )}
 
       {mine && (

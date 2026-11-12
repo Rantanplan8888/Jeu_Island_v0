@@ -52,6 +52,11 @@ export function describe(state: GameState, e: TurnEvent): string | null {
     }
     case 'barracks':
       return `La baraque de l'${islandName(e.islandId)} produit ${e.soldiers} soldat(s) pour ${name(e.player)}.`;
+    case 'spied': {
+      const who = e.owner ? `à ${name(e.owner)}` : 'vierge';
+      const b = e.buildings.length ? `, bâtiments : ${e.buildings.map(buildingLabel).join(', ')}` : ', aucun bâtiment';
+      return `Ton espion a vu l'${islandName(e.islandId)} (${who}) : ${e.soldiers} soldat(s), défense ${e.defense}${b}.`;
+    }
     case 'income':
       return `${name(e.player)} reçoit ${e.gold} or et ${e.wood} bois.`;
     case 'eliminated':

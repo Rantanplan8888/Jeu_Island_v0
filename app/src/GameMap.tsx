@@ -69,8 +69,8 @@ export function GameMap({ state, selected, targets, orders, onTap }: Props) {
             const isSel = selected === i.id;
             const color = playerColor(state, i.owner);
             return (
-              <g key={i.id} className="island" onClick={() => onTap(i.id)}>
-                <polygon points={hexPoints(x, y, SIZE * 0.98)} className={`hex ${target ? `hex-${target}` : ''} ${i.hidden ? 'hex-fog' : ''}`} />
+              <g key={i.id} className={`island ${i.remote ? 'island-remote' : ''}`} onClick={() => onTap(i.id)}>
+                <polygon points={hexPoints(x, y, SIZE * 0.98)} className={`hex ${target ? `hex-${target}` : ''} ${i.remote ? 'hex-far' : i.hidden ? 'hex-fog' : ''}`} />
                 <circle cx={x} cy={y} r={SIZE * 0.62} fill="#e7cf8f" />
                 <circle
                   cx={x}
@@ -81,8 +81,8 @@ export function GameMap({ state, selected, targets, orders, onTap }: Props) {
                   strokeWidth={isSel ? 4 : 2.5}
                 />
                 {i.isCapital && <text x={x} y={y - SIZE * 0.68} className="crown">♛</text>}
-                <text x={x} y={y + 5} className="soldiers">{i.hidden ? '?' : i.soldiers}</text>
-                <text x={x} y={y + SIZE * 0.9} className="defense">🛡{i.hidden ? '?' : defenseOf(i)}</text>
+                {!i.remote && <text x={x} y={y + 5} className="soldiers">{i.hidden ? '?' : i.soldiers}</text>}
+                {!i.remote && <text x={x} y={y + SIZE * 0.9} className="defense">🛡{i.hidden ? '?' : defenseOf(i)}</text>}
                 {i.woodSymbol && <circle cx={x - SIZE * 0.55} cy={y - SIZE * 0.4} r={5} fill="#8b5a2b" stroke="#fff" strokeWidth={1.5} />}
                 {i.goldSymbol && <circle cx={x + SIZE * 0.55} cy={y - SIZE * 0.4} r={5} fill="#ffd23f" stroke="#fff" strokeWidth={1.5} />}
                 {i.buildings.length > 0 && (

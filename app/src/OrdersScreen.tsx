@@ -46,7 +46,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
   const targets = useMemo(() => (targeting ? targetsFrom(state, pid, targeting) : null), [state, pid, targeting]);
   const left = remaining(state, pid, orders);
   const o = normalize(orders);
-  const count = o.recruits.length + o.builds.length + o.moves.length + o.attacks.length;
+  const count = o.recruits.length + o.builds.length + o.moves.length + o.attacks.length + (o.spy !== undefined ? 1 : 0);
 
   const tap = (id: IslandId) => {
     if (targeting) {
