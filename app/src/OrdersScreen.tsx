@@ -1,6 +1,7 @@
 import type { GameState, IslandId, PlayerId, PlayerOrders } from '@island/engine';
 import { useMemo, useState, type ReactNode } from 'react';
 import { GameMap } from './GameMap';
+import { GoldIcon } from './icons';
 import { Help } from './Help';
 import { IslandPanel, SendDialog } from './IslandPanel';
 import { OrdersList } from './OrdersList';
@@ -61,9 +62,9 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
     setShowOrders(false);
   };
 
-  const submit = () => {
-    const problems = rejectedReasons(state, pid, orders);
-    if (problems.length && !confirm(`Certains ordres seront refusés :\n\n${problems.join('\n')}\n\nValider quand même ?`)) return;
+  const [confirming, setConfirming] = useState(false);
+  const confirmSubmit = () => {
+    setConfirming(false);
     setSelected(null);
     setShowOrders(false);
     onSubmit();
@@ -78,7 +79,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
         <span className="dot" style={{ background: playerColor(state, pid) }} />
         <b>{playerName(state, pid)}</b>
         <span className="muted">Tour {state.turn}</span>
-        <span className="res" title="Or">🪙 {left.gold}</span>
+        <span className="res" title="Or"><GoldIcon /> {left.gold}</span>
         <span className="res" title="Bois">🪵 {left.wood}</span>
         <button className="icon" onClick={() => setShowHelp(true)} aria-label="Comment jouer">?</button>
       </header>
@@ -104,15 +105,53 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
           onClose={() => setSelected(null)}
         />
       ) : !targeting ? (
-        <p className="hint">{me?.eliminated ? 'Tu as été éliminé(e) : tu peux suivre la partie.' : 'Touche une de tes îles pour recruter, construire ou envoyer des troupes.'}</p>
+        <p className="hint">{readOnly ? 'Touche une île pour voir ses détails.' : me?.eliminated ? 'Tu as été éliminé(e) : tu peux suivre la partie.' : 'Touche une de tes îles pour recruter, construire ou envoyer des troupes.'}</p>
       ) : null}
+
+      {confirming && (
+        <ConfirmOrders
+          count={count}
+          problems={rejectedReasons(state, pid, orders)}
+          left={left}
+          onCancel={() => setConfirming(false)}
+          onConfirm={confirmSubmit}
+        />
+      )}
 
       {!readOnly && !me?.eliminated && (
         <footer className="actions">
           <button className="ghost" onClick={() => { setShowOrders(!showOrders); setSending(null); }}>Mes ordres ({count})</button>
-          <button className="primary" onClick={submit}>{submitLabel}</button>
+          <button className="primary" onClick={() => setConfirming(true)}>{submitLabel}</button>
         </footer>
       )}
     </main>
+  );
+}
+
+function ConfirmOrders({ count, problems, left, onCancel, onConfirm }: {
+  count: number;
+  problems: string[];
+  left: { gold: number; wood: number };
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="modal-back" onClick={onCancel}>
+      <div className="modal card" role="dialog" aria-modal="true" aria-label="Valider mes ordres" onClick={(e) => e.stopPropagation()}>
+        <h2>Valider tes ordres ?</h2>
+        <p>{count === 0 ? 'Aucun ordre : tu passes ton tour.' : `${count} ordre${count > 1 ? 's' : ''} pour ce tour.`}</p>
+        <p className="muted">Il te restera <GoldIcon size={15} /> {left.gold} et 🪵 {left.wood}.</p>
+        {problems.length > 0 && (
+          <div className="bad">
+            <p><b>Certains ordres seront refusés :</b></p>
+            <ul>{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+          </div>
+        )}
+        <div className="row">
+          <button className="ghost" onClick={onCancel}>Annuler</button>
+          <button className="primary" onClick={onConfirm}>Oui, valider ✓</button>
+        </div>
+      </div>
+    </div>
   );
 }

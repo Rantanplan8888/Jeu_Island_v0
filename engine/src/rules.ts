@@ -39,3 +39,12 @@ export const BARRACKS_SOLDIERS = 1;
 
 /** Durée par défaut d'une partie, en tours (un tour par jour). */
 export const DEFAULT_MAX_TURNS = 30;
+
+/** Défense des îles vierges au départ (soldiers + tour éventuelle). */
+export const PLAIN_DEFENSES = [2, 3, 4] as const;
+/** Île avec un symbole (bois ou or). */
+export const BONUS_DEFENSES = [5, 6] as const;
+/** Île avec les deux symboles. */
+export const BOTH_DEFENSES = [8, 9, 10] as const;
+/** Île avec un bâtiment déjà construit. */
+export const BUILDING_DEFENSES = [4, 5, 6] as const;

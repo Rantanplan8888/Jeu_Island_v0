@@ -32,8 +32,8 @@ describe('résolution d\'un tour', () => {
     expect(state.islands.N!.owner).toBe('A');
     expect(state.islands.N!.soldiers).toBe(2);
     expect(state.islands.CA!.soldiers).toBe(0);
-    // Ressources : 3/3 - 3/3 de recrutement + revenus (capitale 3/3 + île normale 1/1)
-    expect(state.players.A!.resources).toEqual({ gold: 4, wood: 4 });
+    // Ressources : 3/3 - 3/3 de recrutement + revenus de la capitale (3/3) ; l'île conquise ne produit qu'au tour suivant
+    expect(state.players.A!.resources).toEqual({ gold: 3, wood: 3 });
     expect(events.some((e) => e.kind === 'battle' && e.conquered)).toBe(true);
     expect(state.turn).toBe(2);
   });
@@ -72,18 +72,18 @@ describe('résolution d\'un tour', () => {
     expect(state.islands.N!.owner).toBe('A');
     // force restante 1, mais seuls des soldats restent : min(2, 1) = 1
     expect(state.islands.N!.soldiers).toBe(1);
-    expect(state.players.A!.resources.gold).toBe(1 + 3 + 1);
+    expect(state.players.A!.resources.gold).toBe(1 + 3);
   });
 
   it('portée 2 : supplément d\'1 or par unité, sauf avec un port', () => {
     const s = game([capital('CA', 0, 0, 'A'), island('N', 2, 0, { soldiers: 1 }), capital('CB', 6, 0, 'B')]);
     const r1 = resolveTurn(s, { A: { attacks: [{ from: 'CA', to: 'N', soldiers: 3, mercenaries: 0 }] } });
     expect(r1.state.islands.N!.owner).toBe('A');
-    expect(r1.state.players.A!.resources.gold).toBe(0 + 3 + 1);
+    expect(r1.state.players.A!.resources.gold).toBe(0 + 3);
 
     s.islands.CA!.buildings.push({ type: 'port', builtTurn: 0 });
     const r2 = resolveTurn(s, { A: { attacks: [{ from: 'CA', to: 'N', soldiers: 3, mercenaries: 0 }] } });
-    expect(r2.state.players.A!.resources.gold).toBe(3 + 3 + 1);
+    expect(r2.state.players.A!.resources.gold).toBe(3 + 3);
   });
 
   it('portée 3 : attaque refusée', () => {
@@ -171,5 +171,14 @@ describe('création de partie', () => {
       expect(neighbours.length).toBeGreaterThanOrEqual(2);
       expect(neighbours.every((n) => !n.isCapital)).toBe(true);
     }
+  });
+
+  it('une île conquise ne produit qu\'à partir du tour suivant', () => {
+    const s = game([capital('CA', 0, 0, 'A'), island('N', 1, 0, { soldiers: 1, goldSymbol: true }), capital('CB', 5, 0, 'B')]);
+    const r1 = resolveTurn(s, { A: { attacks: [{ from: 'CA', to: 'N', soldiers: 3, mercenaries: 0 }] } });
+    expect(r1.state.islands.N!.owner).toBe('A');
+    expect(r1.state.players.A!.resources.gold).toBe(3 + 3);
+    const r2 = resolveTurn(r1.state, {});
+    expect(r2.state.players.A!.resources.gold).toBe(6 + 3 + 3);
   });
 });

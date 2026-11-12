@@ -9,7 +9,7 @@ Jeu de colonisation d'îles au tour par tour, multijoueur, sur téléphone.
 | `engine/` | TypeScript pur, testé avec Vitest | Moteur de règles : revenus, combats, attaques simultanées, génération du plateau |
 | `app/` | React + Vite, PWA installable (≈ 56 ko compressés) | Carte des îles, saisie des ordres, rapport de tour |
 | `supabase/` | Supabase (Postgres + RLS, Auth, Edge Function `game`) | Comptes, parties, ordres secrets, lancement et résolution des tours |
-| `.github/workflows/` | GitHub Actions | Tests, déploiement Supabase, résolution chaque matin |
+| `.github/workflows/` | GitHub Actions | Tests, déploiement Supabase, résolution à minuit (heure de Paris) |
 | Hébergement | Netlify | Sert l'application |
 
 **Aucune connexion extérieure** : l'application ne communique qu'avec Netlify (qui la sert) et le projet Supabase.
@@ -29,7 +29,7 @@ npm run build     # version de production dans app/dist
 L'appli propose deux modes :
 
 - **en ligne** : chacun joue sur son téléphone avec son compte ; on rejoint une partie avec un code ;
-  les ordres restent secrets jusqu'à la résolution du matin ;
+  les ordres restent secrets jusqu'à la résolution (à minuit, ou dès que tous les joueurs sont prêts) ;
 - **partie d'essai** sur un seul téléphone, en se le passant, pour découvrir les règles.
 
 ## Mise en ligne

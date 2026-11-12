@@ -11,7 +11,7 @@ export function Help({ onClose }: { onClose: () => void }) {
         <section className="card">
           <h2>Le but</h2>
           <p>Conquérir un maximum d'îles. À la fin du dernier tour, celui qui a le plus d'îles gagne. Prendre toutes les capitales fait gagner tout de suite.</p>
-          <p className="muted">Un tour = un jour. Le soir, chacun donne ses ordres en secret ; le matin, tout est résolu en même temps.</p>
+          <p className="muted">Un tour = un jour. Chacun donne ses ordres en secret ; à minuit, tout est résolu en même temps. Si tous les joueurs sont prêts avant, le tour est résolu aussitôt et le suivant commence (il se termine lui aussi à minuit).</p>
         </section>
 
         <section className="card">
@@ -28,13 +28,14 @@ export function Help({ onClose }: { onClose: () => void }) {
             <li>Touche une de tes îles.</li>
             <li><b>Recruter</b> des soldats (1 or + 1 bois chacun) ou <b>construire</b> un bâtiment.</li>
             <li><b>Envoyer des troupes</b> : les cibles clignotent (rouge = attaque, vert = déplacement vers une de tes îles).</li>
-            <li>Vérifie la liste dans <b>Mes ordres</b>, puis <b>Envoyer mes ordres</b>. Tu peux les modifier jusqu'à la résolution.</li>
+            <li>Vérifie la liste dans <b>Mes ordres</b>, puis <b>Je suis prêt ✓</b>. Tu peux encore les modifier et revalider jusqu'à la résolution.</li>
           </ol>
         </section>
 
         <section className="card">
           <h2>Ressources</h2>
           <p>Île normale : 1 or + 1 bois par tour. Symbole bois : 3 bois. Symbole or : 3 or. Capitale : 3 + 3.</p>
+          <p className="muted">Une île conquise ne rapporte rien le tour de sa conquête : elle produit à partir du tour suivant.</p>
           <table className="help-table">
             <tbody>
               <tr><td>Mine</td><td>3 bois</td><td>+2 or / tour</td></tr>

@@ -2,7 +2,7 @@
 
 Trois services, tous gratuits pour un petit groupe :
 
-- **GitHub** : le code, les tests, le déploiement automatique de Supabase et la résolution du matin.
+- **GitHub** : le code, les tests, le déploiement automatique de Supabase et la résolution de minuit.
 - **Supabase** (projet `zodxkoiuvewnpzcjtbiu`) : comptes, parties, ordres secrets, fonction serveur `game`.
 - **Netlify** : héberge l'appli que les joueurs installent sur leur téléphone.
 
@@ -14,7 +14,7 @@ Dans le dépôt GitHub : *Settings → Secrets and variables → Actions → New
 |---|---|
 | `SUPABASE_ACCESS_TOKEN` | supabase.com → avatar en haut à droite → *Account preferences* → *Access Tokens* → *Generate new token* |
 | `SUPABASE_DB_PASSWORD` | le mot de passe de base de données choisi à la création du projet |
-| `CRON_SECRET` | une longue phrase au hasard, inventée (elle protège la résolution du matin) |
+| `CRON_SECRET` | une longue phrase au hasard, inventée (elle protège la résolution de minuit) |
 
 Ensuite, onglet *Actions* → *Déployer Supabase* → *Run workflow*. Le déploiement se relance tout seul
 à chaque modification de `supabase/` ou du moteur de règles.
@@ -36,9 +36,15 @@ Sur le téléphone : ouvrir l'adresse du site, puis « Ajouter à l'écran d'acc
 
 ## Résolution des tours
 
-Le workflow *Résolution quotidienne* s'exécute chaque jour à 5 h UTC (6 h à Paris en hiver, 7 h en été)
-et résout toutes les parties en cours. L'hôte d'une partie peut aussi forcer la résolution depuis l'écran
-du rapport (« Résoudre le tour maintenant »), pratique pour tester.
+Chaque tour a une échéance : **minuit, heure de Paris** (au moins une heure après le début du tour,
+sinon c'est le minuit suivant). Le workflow *Résolution quotidienne* passe à 22 h 05 et 23 h 05 UTC
+(soit minuit cinq à Paris, en hiver comme en été) et résout les parties dont l'échéance est passée.
+GitHub peut retarder ces tâches de quelques minutes.
+
+Chaque joueur peut aussi valider ses ordres avec « Je suis prêt ✓ » : dès que tous les joueurs encore
+en jeu sont prêts, le tour est résolu tout de suite et le suivant commence, avec pour échéance le
+prochain minuit. L'hôte peut enfin forcer la résolution depuis l'écran du rapport
+(« Résoudre le tour maintenant »).
 
 ## Connexions
 

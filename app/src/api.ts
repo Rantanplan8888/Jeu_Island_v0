@@ -162,6 +162,7 @@ export interface GameRow {
   turn: number;
   state: GameState | null;
   resolved_at: string | null;
+  deadline: string | null;
 }
 
 export interface PlayerRow {
@@ -187,12 +188,27 @@ export const api = {
     rest<{ orders: PlayerOrders }[]>(`orders?game_id=eq.${id}&turn=eq.${turn}&user_id=eq.${session?.user.id}&select=orders`).then(
       (r) => r[0]?.orders ?? null,
     ),
-  saveOrders: (id: string, turn: number, orders: PlayerOrders) =>
+  myOrdersRow: (id: string, turn: number) =>
+    rest<{ orders: PlayerOrders; ready: boolean }[]>(
+      `orders?game_id=eq.${id}&turn=eq.${turn}&user_id=eq.${session?.user.id}&select=orders,ready`,
+    ).then((r) => r[0] ?? null),
+  /** Enregistre les ordres ; `ready` indique que le joueur a fini son tour. */
+  saveOrders: (id: string, turn: number, orders: PlayerOrders, ready: boolean) =>
     rest<void>('orders?on_conflict=game_id,user_id,turn', {
       method: 'POST',
       headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ game_id: id, user_id: session?.user.id, turn, orders, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ game_id: id, user_id: session?.user.id, turn, orders, ready, updated_at: new Date().toISOString() }),
     }),
+  readyPlayers: (id: string) =>
+    // Selon la version de PostgREST, un « setof uuid » arrive en ["…"] ou en [{ ready_players: "…" }].
+    rpc<(string | Record<string, string>)[]>('ready_players', { p_game: id }).then((rows) =>
+      (rows ?? []).map((r) => (typeof r === 'string' ? r : String(Object.values(r)[0]))),
+    ),
+  /** Prévient le serveur qu'on est prêt : il résout le tour si tout le monde l'est. */
+  notifyReady: (id: string) => fn<{ ok: boolean; resolved: boolean; ready: number; total: number }>('ready', { gameId: id }),
+  /** Rapport d'un tour, avec la carte après ce tour (absente pour les tours joués avant l'historique). */
   report: (id: string, turn: number) =>
-    rest<{ events: TurnEvent[] }[]>(`turn_reports?game_id=eq.${id}&turn=eq.${turn}&select=events`).then((r) => r[0]?.events ?? null),
+    rest<{ events: TurnEvent[]; state: GameState | null }[]>(`turn_reports?game_id=eq.${id}&turn=eq.${turn}&select=events,state`).then(
+      (r) => r[0] ?? null,
+    ),
 };

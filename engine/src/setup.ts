@@ -3,8 +3,18 @@
  * La taille du plateau est proportionnelle au nombre de joueurs.
  */
 import { hexDistance } from './board.ts';
-import { DEFAULT_MAX_TURNS, STARTING_RESOURCES, STARTING_SOLDIERS } from './rules.ts';
-import type { GameState, Island } from './types.ts';
+import {
+  BONUS_DEFENSES, BOTH_DEFENSES, BUILDING_DEFENSES, DEFAULT_MAX_TURNS, PLAIN_DEFENSES,
+  STARTING_RESOURCES, STARTING_SOLDIERS, TOWER_DEFENSE,
+} from './rules.ts';
+import type { BuildingType, GameState, Island } from './types.ts';
+
+type IslandKind =
+  | { kind: 'sea' }
+  | { kind: 'plain' | 'wood' | 'gold' | 'both'; defense: number }
+  | { kind: 'building'; building: BuildingType; defense: number };
+
+const BUILDING_TYPES: readonly BuildingType[] = ['mine', 'sawmill', 'barracks', 'port', 'tower', 'university'];
 
 /** Générateur pseudo-aléatoire déterministe (mulberry32). */
 export function rng(seed: number): () => number {
@@ -63,18 +73,40 @@ export function createGame(opts: NewGameOptions): GameState {
   }
   const capitalKeys = new Set(capitals.map(key));
 
-  // Îles : toujours sur les cases voisines des capitales, aléatoirement ailleurs.
-  const nearCapital = new Set<string>();
-  for (const c of capitals) for (const [dq, dr] of NEIGHBORS) nearCapital.add(key({ q: c.q + dq, r: c.r + dr }));
+  // Autour de chaque capitale : 5 îles voisines sur 6 cases, toujours les mêmes types
+  // (îles simples de défense 2, 3 et 4, une île bois et une île or de défense 5 ou 6).
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(random() * xs.length)]!;
+  const shuffle = <T,>(xs: T[]): T[] => {
+    for (let i = xs.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [xs[i], xs[j]] = [xs[j]!, xs[i]!];
+    }
+    return xs;
+  };
+  const inBoard = new Set(cells.map(key));
+  const planned = new Map<string, IslandKind>();
+  for (const c of capitals) {
+    const around = shuffle(NEIGHBORS.map(([dq, dr]) => ({ q: c.q + dq, r: c.r + dr })))
+      .filter((x) => inBoard.has(key(x)) && !capitalKeys.has(key(x)));
+    const kinds: IslandKind[] = shuffle([
+      { kind: 'plain', defense: 2 }, { kind: 'plain', defense: 3 }, { kind: 'plain', defense: 4 },
+      { kind: 'wood', defense: pick([5, 6]) }, { kind: 'gold', defense: pick([5, 6]) },
+    ]);
+    // Les 5 îles prennent 5 des 6 cases ; la dernière reste de la mer.
+    for (const cell of around.slice(0, 5)) {
+      const k = key(cell);
+      if (planned.has(k)) continue; // case déjà prévue par une capitale voisine
+      planned.set(k, kinds.pop() ?? { kind: 'plain', defense: pick(PLAIN_DEFENSES) });
+    }
+    for (const cell of around.slice(5)) if (!planned.has(key(cell))) planned.set(key(cell), { kind: 'sea' });
+  }
 
   const islands: Record<string, Island> = {};
   let counter = 0;
   for (const c of cells) {
     const k = key(c);
-    const isCap = capitalKeys.has(k);
-    if (!isCap && !nearCapital.has(k) && random() > density) continue;
-    const id = `I${++counter}`;
-    if (isCap) {
+    if (capitalKeys.has(k)) {
+      const id = `I${++counter}`;
       const player = opts.players[capitals.findIndex((x) => key(x) === k)]!;
       islands[id] = {
         id, q: c.q, r: c.r, owner: player.id, soldiers: STARTING_SOLDIERS,
@@ -83,22 +115,28 @@ export function createGame(opts: NewGameOptions): GameState {
       continue;
     }
     const dCap = Math.min(...capitals.map((x) => hexDistance(c, x)));
-    const roll = random();
-    const both = roll < 0.05;
-    const woodSymbol = both || (roll >= 0.05 && roll < 0.25);
-    const goldSymbol = both || (roll >= 0.25 && roll < 0.45);
-    let soldiers = Math.min(5, dCap) + Math.floor(random() * 2);
-    if (woodSymbol || goldSymbol) soldiers += 1;
-    if (both) soldiers += 2;
-    const buildings: Island['buildings'] = [];
-    if (dCap >= 2 && random() < 0.1) {
-      const types = ['mine', 'sawmill', 'barracks', 'port', 'tower', 'university'] as const;
-      buildings.push({ type: types[Math.floor(random() * types.length)]!, builtTurn: 0 });
-    }
+    const kind = planned.get(k) ?? (random() > density ? { kind: 'sea' as const } : randomKind(dCap));
+    if (kind.kind === 'sea') continue;
+    const id = `I${++counter}`;
+    const buildings: Island['buildings'] = kind.kind === 'building' ? [{ type: kind.building, builtTurn: 0 }] : [];
+    // La défense annoncée inclut la tour éventuelle (+3).
+    const soldiers = kind.defense - (kind.kind === 'building' && kind.building === 'tower' ? TOWER_DEFENSE : 0);
     islands[id] = {
       id, q: c.q, r: c.r, owner: null, soldiers: Math.max(1, soldiers),
-      woodSymbol, goldSymbol, isCapital: false, startingCapital: false, buildings,
+      woodSymbol: kind.kind === 'wood' || kind.kind === 'both',
+      goldSymbol: kind.kind === 'gold' || kind.kind === 'both',
+      isCapital: false, startingCapital: false, buildings,
     };
+  }
+
+  /** Île du reste de la carte : 10 % avec bâtiment, 35 % avec un symbole, 5 % avec les deux (loin des capitales). */
+  function randomKind(dCap: number): IslandKind {
+    const roll = random();
+    if (roll < 0.05 && dCap >= 3) return { kind: 'both', defense: pick(BOTH_DEFENSES) };
+    if (roll < 0.15 && dCap >= 2) return { kind: 'building', building: pick(BUILDING_TYPES), defense: pick(BUILDING_DEFENSES) };
+    if (roll < 0.325) return { kind: 'wood', defense: pick(BONUS_DEFENSES) };
+    if (roll < 0.5) return { kind: 'gold', defense: pick(BONUS_DEFENSES) };
+    return { kind: 'plain', defense: pick(PLAIN_DEFENSES) };
   }
 
   return {

@@ -188,3 +188,16 @@ form.card .row input { width: 100%; }
 .help-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .help-table td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .help-table td:first-child { font-weight: 700; }
+
+/* Historique */
+.turn-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; }
+.turn-nav span { font-weight: 700; font-variant-numeric: tabular-nums; }
+.turn-nav button { min-width: 56px; }
+.status-ready { background: rgba(125, 255, 161, 0.15); color: var(--good); }
+.status-sub { font-size: 0.78rem; opacity: 0.85; margin-top: 2px; color: var(--ink); }
+
+/* Confirmation */
+.modal-back { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.55); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.modal { width: 100%; max-width: 480px; margin: 0; animation: rise 0.18s ease-out; background: #0a2c45; }
+.modal ul { margin: 4px 0; padding-left: 20px; font-size: 0.9rem; }
+.modal .row button { flex: 1; padding: 13px; }

@@ -9,6 +9,7 @@ import { clearLocal, loadLocal, saveLocal, type LocalGame } from './storage';
 /** Partie d'essai sur un seul téléphone : les joueurs se passent l'appareil. */
 export function Local({ onExit }: { onExit: () => void }) {
   const [game, setGame] = useState<LocalGame | null>(() => loadLocal());
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     if (game) saveLocal(game);
@@ -28,9 +29,26 @@ export function Local({ onExit }: { onExit: () => void }) {
   const pid: PlayerId = alive[game.current] ?? alive[0]!;
   const orders = game.orders[pid] ?? emptyOrders();
 
+  if (showMap) {
+    return (
+      <OrdersScreen
+        state={state}
+        pid={alive[0] ?? Object.keys(state.players)[0]!}
+        orders={emptyOrders()}
+        setOrders={() => {}}
+        submitLabel=""
+        onSubmit={() => {}}
+        readOnly
+        banner={<div className="status status-saved">{state.finished ? 'Carte finale' : `Carte après le tour ${state.turn - 1}`} (consultation)</div>}
+        topAction={<button className="icon" onClick={() => setShowMap(false)} aria-label="Retour au rapport">←</button>}
+      />
+    );
+  }
+
   if (game.phase === 'report' || state.finished) {
     return (
       <Report state={state} events={game.lastEvents} title={state.finished ? 'Fin de la partie' : `Résultat du tour ${state.turn - 1}`}>
+        <button className="ghost wide" onClick={() => setShowMap(true)}>{state.finished ? 'Voir la carte finale' : 'Voir la carte'}</button>
         {state.finished ? (
           <button className="primary wide" onClick={() => quit(false)}>Nouvelle partie</button>
         ) : (

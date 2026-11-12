@@ -25,7 +25,7 @@ export function App() {
       {help && <Help onClose={() => setHelp(false)} />}
       <section className="card">
         <h2>Jouer en ligne</h2>
-        <p className="muted">Chacun sur son téléphone. Les ordres se donnent le soir, le tour est résolu chaque matin.</p>
+        <p className="muted">Chacun sur son téléphone. Chaque tour se termine à minuit, ou plus tôt si tout le monde est prêt.</p>
         <button className="primary wide" onClick={() => setScreen('online')}>
           {getSession() ? 'Mes parties' : 'Se connecter'}
         </button>
