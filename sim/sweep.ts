@@ -12,25 +12,24 @@ import { writeFileSync } from 'node:fs';
 import { makeRules, type Rules } from '../engine/src/index.ts';
 import { summarize, tournament, printSummary, type Summary } from './run.ts';
 
+const OLD: Partial<Rules> = { occupationRequiresSoldier: false, mercenariesPerSoldier: null, attackerTieBreak: 'playerId' };
+const B = makeRules().buildings;
+
 export const VARIANTS: { name: string; label: string; rules: Partial<Rules> }[] = [
-  { name: 'actuel', label: 'Règles actuelles', rules: {} },
-  { name: 'tirage', label: 'Égalité d\'attaquants tirée au sort', rules: { attackerTieBreak: 'draw' } },
-  { name: 'occupation', label: 'Il faut un soldat survivant pour occuper', rules: { attackerTieBreak: 'draw', occupationRequiresSoldier: true } },
-  { name: 'merc3or', label: 'Mercenaire à 3 or', rules: { attackerTieBreak: 'draw', mercenaryCost: { gold: 3, wood: 0 } } },
-  { name: 'merc2force', label: 'Mercenaire de force 2', rules: { attackerTieBreak: 'draw', mercenaryForce: 2 } },
-  { name: 'merc2or1bois', label: 'Mercenaire à 2 or + 1 bois', rules: { attackerTieBreak: 'draw', mercenaryCost: { gold: 2, wood: 1 } } },
-  { name: 'mine1', label: 'Mine à +1 or', rules: { attackerTieBreak: 'draw', mineGold: 1 } },
-  {
-    name: 'mine5bois', label: 'Mine à 5 bois',
-    rules: { attackerTieBreak: 'draw', buildings: { ...makeRules().buildings, mine: { cost: { gold: 0, wood: 5 }, label: 'Mine' } } },
-  },
-  { name: 'neutres+2', label: 'Îles neutres plus fortes (+2)', rules: { attackerTieBreak: 'draw', plainDefenses: [4, 5, 6], bonusDefenses: [7, 8], bothDefenses: [10, 11, 12], buildingDefenses: [6, 7, 8] } },
-  { name: 'mur5', label: 'Mur de capitale à 5', rules: { attackerTieBreak: 'draw', capitalWallDefense: 5 } },
-  { name: 'tour5', label: 'Tour à +5', rules: { attackerTieBreak: 'draw', towerDefense: 5 } },
-  { name: 'occ+merc3', label: 'Occupation + mercenaire à 3 or', rules: { attackerTieBreak: 'draw', occupationRequiresSoldier: true, mercenaryCost: { gold: 3, wood: 0 } } },
-  { name: 'occ+mine1', label: 'Occupation + mine à +1 or', rules: { attackerTieBreak: 'draw', occupationRequiresSoldier: true, mineGold: 1 } },
-  { name: 'occ+tour5', label: 'Occupation + tour à +5', rules: { attackerTieBreak: 'draw', occupationRequiresSoldier: true, towerDefense: 5 } },
+  { name: 'anciennes', label: 'Anciennes règles (avant équilibrage)', rules: OLD },
+  { name: 'actuel', label: 'Règles équilibrées (par défaut)', rules: {} },
+  { name: 'merc3or', label: 'Mercenaire à 3 or', rules: { mercenaryCost: { gold: 3, wood: 0 } } },
+  { name: 'merc-demi', label: '1 mercenaire pour 2 soldats', rules: { mercenariesPerSoldier: 0.5 } },
+  { name: 'mine1', label: 'Mine à +1 or', rules: { mineGold: 1 } },
+  { name: 'neutres+2', label: 'Îles neutres plus fortes (+2)', rules: { plainDefenses: [4, 5, 6], bonusDefenses: [7, 8], bothDefenses: [10, 11, 12], buildingDefenses: [6, 7, 8] } },
+  { name: 'mur5', label: 'Mur de capitale à 5', rules: { capitalWallDefense: 5 } },
+  { name: 'tour5', label: 'Tour à +5', rules: { towerDefense: 5 } },
+  { name: 'tour2bois', label: 'Tour à 2 bois', rules: { buildings: { ...B, tower: { cost: { gold: 0, wood: 2 }, label: 'Tour' } } } },
+  { name: 'depart5', label: '5 soldats au départ', rules: { startingSoldiers: 5 } },
+  { name: 'revenu-ile2', label: 'Symbole à +2 au lieu de +3', rules: { symbolIncome: 2 } },
+  { name: 'secondaire0', label: 'Attaquants secondaires sans effet', rules: { secondaryForceShare: 0 } },
 ];
+
 
 interface Job { name: string; rules: Partial<Rules>; games: number }
 

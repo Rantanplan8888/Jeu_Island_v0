@@ -25,10 +25,13 @@ export interface Rules {
   secondaryForceShare: number;
   /**
    * Départage de deux attaquants de même force sur une île :
-   * - 'playerId' : le plus petit identifiant de joueur gagne (règle actuelle) ;
+   * - 'defender' : personne ne prend l'île, l'attaque échoue (règle retenue) ;
+   * - 'playerId' : le plus petit identifiant de joueur gagne (ancienne règle) ;
    * - 'draw' : tirage déterministe propre à chaque île et à chaque tour.
    */
-  attackerTieBreak: 'playerId' | 'draw';
+  attackerTieBreak: 'defender' | 'playerId' | 'draw';
+  /** Nombre maximal de mercenaires par soldat dans une attaque (null = sans limite). */
+  mercenariesPerSoldier: number | null;
   /**
    * Si vrai, une île n'est prise que si au moins un soldat survit pour l'occuper :
    * une attaque de mercenaires seuls tue les défenseurs mais l'île reste à son propriétaire.
@@ -65,8 +68,9 @@ export const DEFAULT_RULES: Rules = {
   startingSoldiers: 3,
   winnerLossShare: 4 / 5,
   secondaryForceShare: 0.5,
-  attackerTieBreak: 'playerId',
-  occupationRequiresSoldier: false,
+  attackerTieBreak: 'defender',
+  mercenariesPerSoldier: 1,
+  occupationRequiresSoldier: true,
   buildings: {
     mine: { cost: { gold: 0, wood: 3 }, label: 'Mine' },
     sawmill: { cost: { gold: 2, wood: 0 }, label: 'Scierie' },

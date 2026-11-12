@@ -129,6 +129,10 @@ export function resolveTurn(
       if (!from || from.owner !== pid) { reject(pid, `Attaque impossible : l'île ${a.from} ne vous appartient pas.`); continue; }
       if (!to || to.owner === pid) { reject(pid, `Attaque impossible : cible ${a.to} invalide.`); continue; }
       if (!isNonNegativeInt(a.soldiers) || !isNonNegativeInt(a.mercenaries) || a.soldiers + a.mercenaries === 0) { reject(pid, 'Attaque : nombre d\'unités invalide.'); continue; }
+      if (rules.mercenariesPerSoldier !== null && a.mercenaries > a.soldiers * rules.mercenariesPerSoldier) {
+        reject(pid, `Attaque ${from.id} → ${to.id} : pas plus de ${rules.mercenariesPerSoldier === 1 ? 'mercenaires que de soldats' : `${rules.mercenariesPerSoldier} mercenaires par soldat`}.`);
+        continue;
+      }
       const available = from.soldiers - (arrived[from.id] ?? 0);
       if (a.soldiers > available) { reject(pid, `Attaque depuis ${from.id} : pas assez de soldats disponibles.`); continue; }
       const cost = attackCost(state, from.id, to.id, a.soldiers, a.mercenaries, rules);

@@ -111,7 +111,7 @@ export function IslandPanel({ state, pid, orders, islandId, setOrders, onSend, o
             })}
           </div>
 
-          <button className="primary wide" disabled={availableToLeave(state, orders, islandId) < 1 && left.gold < 2} onClick={onSend}>
+          <button className="primary wide" disabled={availableToLeave(state, orders, islandId) < 1} onClick={onSend}>
             Envoyer des troupes depuis cette île…
           </button>
         </>
@@ -140,7 +140,9 @@ export function SendDialog({ state, pid, orders, from, to, kind, setOrders, onDo
   const surcharge = kind === 'attack' && d === 2 && !hasBuilding(state.islands[from]!, 'port');
   // Par défaut : toutes les troupes disponibles qu'on peut payer.
   const [soldiers, setSoldiers] = useState(kind === 'move' ? avail : surcharge ? Math.min(avail, Math.max(0, left.gold)) : avail);
-  const [mercs, setMercs] = useState(0);
+  const [mercsWanted, setMercs] = useState(0);
+  // Pas plus de mercenaires que de soldats dans une attaque.
+  const mercs = Math.min(mercsWanted, soldiers);
   const [destroy, setDestroy] = useState<BuildingType | undefined>(target.buildings[0]?.type);
 
   const cost = kind === 'attack' ? attackCost(state, from, to, soldiers, mercs) : { gold: 0, wood: 0 };
@@ -172,8 +174,8 @@ export function SendDialog({ state, pid, orders, from, to, kind, setOrders, onDo
       </div>
       {kind === 'attack' && (
         <div className="row">
-          <span>Mercenaires (2 or, force 3)</span>
-          <Stepper value={mercs} min={0} max={20} onChange={setMercs} />
+          <span>Mercenaires (2 or, force 3, pas plus que de soldats)</span>
+          <Stepper value={mercs} min={0} max={soldiers} onChange={setMercs} />
         </div>
       )}
       {kind === 'attack' && target.owner && target.buildings.length > 0 && (
@@ -195,7 +197,7 @@ export function SendDialog({ state, pid, orders, from, to, kind, setOrders, onDo
           <small className="muted">La défense peut changer d'ici la résolution (renforts, autres attaquants).</small>
         </p>
       )}
-      <button className="primary wide" disabled={soldiers + mercs < 1 || !affordable} onClick={confirm}>
+      <button className="primary wide" disabled={(kind === 'attack' ? soldiers < 1 : soldiers + mercs < 1) || !affordable} onClick={confirm}>
         {affordable ? 'Ajouter cet ordre' : 'Or insuffisant'}
       </button>
     </section>

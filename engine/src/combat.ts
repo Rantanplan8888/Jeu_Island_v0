@@ -64,8 +64,9 @@ export interface MultiAttackResult {
  * - Le plus fort supporte 4/5 des pertes ; les autres se partagent 1/5
  *   au prorata de leur force. Chaque part est arrondie au-dessus et plafonnée
  *   à la force de l'attaquant.
- * - En cas d'égalité de force entre attaquants, l'ordre fourni départage
- *   (l'appelant fournit un ordre déterministe).
+ * - Si deux attaquants ont la même force en tête, l'attaque échoue comme une attaque ratée
+ *   (le défenseur garde l'île). Avec un autre départage dans les règles, l'ordre fourni
+ *   par l'appelant désigne le vainqueur.
  * Avec un seul attaquant, le résultat est identique à `duel`.
  */
 export function multiAttack(attackers: AttackerInput[], defenseForce: number, rules: Rules = DEFAULT_RULES): MultiAttackResult {
@@ -77,6 +78,15 @@ export function multiAttack(attackers: AttackerInput[], defenseForce: number, ru
   const othersForce = others.reduce((s, a) => s + a.force, 0);
   const combinedForce = Math.floor(first.force + rules.secondaryForceShare * othersForce);
   const result = duel(combinedForce, defenseForce);
+  // Deux attaquants à égalité en tête : le défenseur garde l'île, l'attaque échoue.
+  const tied = rules.attackerTieBreak === 'defender' && others[0] !== undefined && others[0].force === first.force;
+  if (tied && result.attackerWins) {
+    return {
+      combinedForce, attackerWins: false, winnerKey: null,
+      losses: Object.fromEntries(sorted.map((a) => [a.key, a.force])),
+      defenderLosses: Math.min(defenseForce, winnerLosses(defenseForce, combinedForce)),
+    };
+  }
   const losses: Record<string, number> = {};
 
   if (!result.attackerWins) {

@@ -144,6 +144,8 @@ interface AttackPlan {
   value: number;
   ratio: number;
   survivors: number;
+  /** Soldats à recruter sur l'île de départ pour cette attaque. */
+  recruit: number;
 }
 
 /** Meilleure façon de prendre une île donnée (le moins d'or et de soldats perdus). */
@@ -162,11 +164,17 @@ function planAttack(ctx: Ctx, strat: Strategy, target: Island, blitz: boolean): 
   for (const from of ctx.mine) {
     const d = hexDistance(from, target);
     if (d < 1 || d > 2) continue;
-    const avail = ctx.free.get(from.id) ?? 0;
+    const free = ctx.free.get(from.id) ?? 0;
+    // On peut aussi recruter sur l'île de départ : les recrues attaquent le même tour.
+    const sc = rules.soldierCost;
+    const recruitable = Math.floor(Math.min(sc.gold ? budget.gold / sc.gold : 99, sc.wood ? budget.wood / sc.wood : 99));
+    const avail = free + recruitable;
     for (let m = 0; m <= maxMercs; m++) {
       // Le moins de soldats possible pour gagner, mais au moins la garnison voulue.
       const needForce = defense + 1 + margin - m * rules.mercenaryForce;
       let s = Math.max(0, Math.ceil(needForce / rules.soldierForce));
+      // Limite de mercenaires par soldat.
+      if (rules.mercenariesPerSoldier !== null) s = Math.max(s, Math.ceil(m / rules.mercenariesPerSoldier));
       if (s > avail) continue;
       const want = Math.max(blitz ? 0 : strat.garrison, rules.occupationRequiresSoldier ? 1 : 0);
       // Ajouter des soldats tant que les survivants n'atteignent pas la garnison voulue.
@@ -180,19 +188,23 @@ function planAttack(ctx: Ctx, strat: Strategy, target: Island, blitz: boolean): 
       if (s + m === 0) continue;
       const force = s * rules.soldierForce + m * rules.mercenaryForce;
       if (force <= defense) continue;
-      const cost = attackCost(state, from.id, target.id, s, m, rules);
-      if (!cost || cost.gold > budget.gold || cost.wood > budget.wood) continue;
+      const ac = attackCost(state, from.id, target.id, s, m, rules);
+      if (!ac) continue;
+      const recruit = Math.max(0, s - free);
+      const cost = { gold: ac.gold + recruit * sc.gold, wood: ac.wood + recruit * sc.wood };
+      if (cost.gold > budget.gold || cost.wood > budget.wood) continue;
       const losses = defense <= 0 ? 0 : force >= 2 * defense ? defense - 1 : defense;
       const survivors = Math.min(s, Math.floor((force - losses) / rules.soldierForce));
       if (!blitz && survivors < Math.min(strat.garrison, 1) && enemy) continue;
       if (rules.occupationRequiresSoldier && survivors < 1) continue;
       const lostSoldiers = s - survivors;
-      const price = cost.gold + cost.wood + lostSoldiers * (rules.soldierCost.gold + rules.soldierCost.wood) + 0.5;
+      const lostOwn = Math.max(0, lostSoldiers - recruit); // les recrues perdues sont déjà dans le coût
+      const price = cost.gold + cost.wood + lostOwn * (sc.gold + sc.wood) + 0.5;
       const ratio = value / price;
       if (!best || ratio > best.ratio) {
         best = {
           order: { from: from.id, to: target.id, soldiers: s, mercenaries: m, destroyBuilding: pickDestroy(target) },
-          cost, value, ratio, survivors,
+          cost, value, ratio, survivors, recruit,
         };
       }
     }
@@ -296,7 +308,11 @@ export function decide(state: GameState, me: PlayerId, strat: Strategy, rules: R
       orders.attacks.push(best.order);
       spend(best.cost);
       targeted.add(best.order.to);
-      ctx.free.set(best.order.from, (ctx.free.get(best.order.from) ?? 0) - best.order.soldiers);
+      if (best.recruit > 0) {
+        const r = orders.recruits.find((x) => x.islandId === best!.order.from);
+        if (r) r.soldiers += best.recruit; else orders.recruits.push({ islandId: best.order.from, soldiers: best.recruit });
+      }
+      ctx.free.set(best.order.from, (ctx.free.get(best.order.from) ?? 0) + best.recruit - best.order.soldiers);
     }
   }
 
