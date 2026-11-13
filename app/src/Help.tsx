@@ -19,7 +19,9 @@ export function Help({ onClose }: { onClose: () => void }) {
           <p><span className="dot" style={{ background: '#e4572e' }} /> Rond de couleur : île d'un joueur. ♛ = capitale.</p>
           <p><span className="dot" style={{ background: '#6c9a5a' }} /> Rond vert : île vierge, gardée par des soldats.</p>
           <p><b>Chiffre</b> = soldats sur l'île · <b>🛡</b> = défense totale.</p>
-          <p><span className="dot" style={{ background: '#8b5a2b' }} /> symbole bois · <span className="dot" style={{ background: '#ffd23f' }} /> symbole or · ▫ bâtiment</p>
+          <p><span className="dot" style={{ background: '#8b5a2b' }} /> symbole bois · <span className="dot" style={{ background: '#ffd23f' }} /> symbole or</p>
+          <p>Bâtiments : ⛏️ mine · 🪓 scierie · ⛺ baraque · ⚓ port · 🏰 tour · 🎓 université (en transparence : en construction ce tour).</p>
+          <p>Sur tes îles, une bulle <b>+2 −3</b> indique les soldats recrutés et ceux qui partent ce tour. Sur une flèche, <b>3+2M</b> = 3 soldats et 2 mercenaires.</p>
         </section>
 
         <section className="card">

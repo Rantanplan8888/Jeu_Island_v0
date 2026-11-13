@@ -87,7 +87,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
       {banner}
       {targeting && <div className="hint">Touche une île en surbrillance : rouge pour attaquer, verte pour déplacer. Touche l'île de départ pour annuler.</div>}
 
-      <GameMap state={state} selected={targeting ?? selected} targets={targets} orders={orders} onTap={tap} />
+      <GameMap state={state} selected={targeting ?? selected} targets={targets} orders={orders} pid={pid} onTap={tap} />
 
       {sending ? (
         <SendDialog state={state} pid={pid} orders={orders} {...sending} setOrders={setOrders} onDone={() => { setSending(null); setSelected(sending.from); }} />

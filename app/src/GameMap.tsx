@@ -1,9 +1,24 @@
-import { defenseOf, type GameState, type IslandId, type PlayerOrders } from '@island/engine';
+import { defenseOf, type BuildingType, type GameState, type IslandId, type PlayerId, type PlayerOrders } from '@island/engine';
 import { useMemo, useState } from 'react';
 import { playerColor } from './format';
 import { normalize, type TargetKind } from './orders';
 
 const SIZE = 30;
+
+/** Icône de chaque bâtiment, dessinée sur l'île. */
+export const BUILDING_ICONS: Record<BuildingType, string> = {
+  mine: '⛏️',
+  sawmill: '🪓',
+  barracks: '⛺',
+  port: '⚓',
+  tower: '🏰',
+  university: '🎓',
+};
+
+/** Emplacements des icônes de bâtiments autour de l'île (en bas, puis sur les côtés). */
+const BUILDING_SLOTS = [
+  [-0.62, 0.52], [0.62, 0.52], [-0.82, 0.08], [-0.3, 0.78], [0.3, 0.78], [0.82, 0.08],
+] as const;
 const SQRT3 = Math.sqrt(3);
 
 function toPixel(q: number, r: number) {
@@ -22,10 +37,12 @@ interface Props {
   selected: IslandId | null;
   targets: Map<IslandId, TargetKind> | null;
   orders: PlayerOrders;
+  /** Joueur qui regarde la carte : ses ordres en attente sont affichés sur ses îles. */
+  pid?: PlayerId;
   onTap: (id: IslandId) => void;
 }
 
-export function GameMap({ state, selected, targets, orders, onTap }: Props) {
+export function GameMap({ state, selected, targets, orders, pid, onTap }: Props) {
   const [zoom, setZoom] = useState(1);
   const islands = Object.values(state.islands);
 
@@ -40,9 +57,19 @@ export function GameMap({ state, selected, targets, orders, onTap }: Props) {
 
   const o = normalize(orders);
   const arrows = [
-    ...o.attacks.map((a) => ({ from: a.from, to: a.to, kind: 'attack' as const })),
-    ...o.moves.map((m) => ({ from: m.from, to: m.to, kind: 'move' as const })),
+    ...o.attacks.map((a) => ({ from: a.from, to: a.to, kind: 'attack' as const, soldiers: a.soldiers, mercs: a.mercenaries })),
+    ...o.moves.map((m) => ({ from: m.from, to: m.to, kind: 'move' as const, soldiers: m.soldiers, mercs: 0 })),
   ];
+  // Soldats qui arrivent (recrues) ou partent (attaques, déplacements) de chaque île, d'après mes ordres.
+  const delta = new Map<IslandId, { plus: number; minus: number }>();
+  const bump = (id: IslandId, plus: number, minus: number) => {
+    const d = delta.get(id) ?? { plus: 0, minus: 0 };
+    delta.set(id, { plus: d.plus + plus, minus: d.minus + minus });
+  };
+  for (const r of o.recruits) bump(r.islandId, r.soldiers, 0);
+  for (const a of arrows) if (a.soldiers) bump(a.from, 0, a.soldiers);
+  const planned = new Map<IslandId, BuildingType[]>();
+  for (const b of o.builds) planned.set(b.islandId, [...(planned.get(b.islandId) ?? []), b.building]);
 
   return (
     <div className="map-wrap">
@@ -85,9 +112,33 @@ export function GameMap({ state, selected, targets, orders, onTap }: Props) {
                 {!i.remote && <text x={x} y={y + SIZE * 0.9} className="defense">🛡{i.hidden ? '?' : defenseOf(i)}</text>}
                 {i.woodSymbol && <circle cx={x - SIZE * 0.55} cy={y - SIZE * 0.4} r={5} fill="#8b5a2b" stroke="#fff" strokeWidth={1.5} />}
                 {i.goldSymbol && <circle cx={x + SIZE * 0.55} cy={y - SIZE * 0.4} r={5} fill="#ffd23f" stroke="#fff" strokeWidth={1.5} />}
-                {i.buildings.length > 0 && (
-                  <rect x={x + SIZE * 0.38} y={y + SIZE * 0.25} width={9} height={9} rx={2} fill="#eee" stroke="#333" strokeWidth={1} />
-                )}
+                {[
+                  ...i.buildings.map((b) => ({ type: b.type, planned: false })),
+                  ...(i.owner === pid ? planned.get(i.id) ?? [] : []).map((type) => ({ type, planned: true })),
+                ].slice(0, BUILDING_SLOTS.length).map((b, k) => {
+                  const [dx, dy] = BUILDING_SLOTS[k]!;
+                  return (
+                    <text key={k} x={x + SIZE * dx} y={y + SIZE * dy + 4} className={`bicon ${b.planned ? 'bicon-planned' : ''}`}>
+                      {BUILDING_ICONS[b.type]}
+                    </text>
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {/* Soldats en plus (recrues) et en moins (départs) d'après mes ordres, dessinés par-dessus les îles. */}
+          {pid && [...delta].map(([id, d]) => {
+            const i = state.islands[id];
+            if (!i || i.owner !== pid) return null;
+            const { x, y } = toPixel(i.q, i.r);
+            const label = `${d.plus ? `+${d.plus}` : ''}${d.plus && d.minus ? ' ' : ''}${d.minus ? `−${d.minus}` : ''}`;
+            const w = 8 + label.length * 5.5;
+            const cy = y - SIZE * 0.66;
+            return (
+              <g key={`d${id}`} className="troop-delta">
+                <rect x={x - w / 2} y={cy - 7} width={w} height={13} rx={6.5} />
+                <text x={x} y={cy + 3.5}>{label}</text>
               </g>
             );
           })}
@@ -102,16 +153,25 @@ export function GameMap({ state, selected, targets, orders, onTap }: Props) {
             const dy = p2.y - p1.y;
             const len = Math.hypot(dx, dy) || 1;
             const k = (SIZE * 0.6) / len;
+            const label = a.mercs ? `${a.soldiers}+${a.mercs}M` : `${a.soldiers}`;
+            const mx = (p1.x + p2.x) / 2;
+            const my = (p1.y + p2.y) / 2;
+            const w = 8 + label.length * 6;
             return (
-              <line
-                key={idx}
-                x1={p1.x + dx * k}
-                y1={p1.y + dy * k}
-                x2={p2.x - dx * k}
-                y2={p2.y - dy * k}
-                className={`arrow arrow-${a.kind}`}
-                markerEnd={`url(#arrow-${a.kind})`}
-              />
+              <g key={idx}>
+                <line
+                  x1={p1.x + dx * k}
+                  y1={p1.y + dy * k}
+                  x2={p2.x - dx * k}
+                  y2={p2.y - dy * k}
+                  className={`arrow arrow-${a.kind}`}
+                  markerEnd={`url(#arrow-${a.kind})`}
+                />
+                <g className={`arrow-label arrow-label-${a.kind}`}>
+                  <rect x={mx - w / 2} y={my - 7} width={w} height={14} rx={7} />
+                  <text x={mx} y={my + 3.5}>{label}</text>
+                </g>
+              </g>
             );
           })}
         </svg>
