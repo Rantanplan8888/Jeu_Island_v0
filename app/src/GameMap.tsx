@@ -153,22 +153,29 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
             const len = Math.hypot(dx, dy) || 1;
-            const k = (SIZE * 0.6) / len;
+            // Cible à 2 cases en ligne droite : la flèche se courbe pour contourner la case du milieu.
+            const aligned = (f.q + t.q) % 2 === 0 && (f.r + t.r) % 2 === 0;
+            const bend = aligned && len > SIZE * 2.2 ? SIZE * 1.5 : 0;
+            const c = { x: (p1.x + p2.x) / 2 - (dy / len) * bend, y: (p1.y + p2.y) / 2 + (dx / len) * bend };
+            const toward = (from: { x: number; y: number }, to: { x: number; y: number }, d: number) => {
+              const l = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+              return { x: from.x + ((to.x - from.x) / l) * d, y: from.y + ((to.y - from.y) / l) * d };
+            };
+            const start = toward(p1, c, SIZE * 0.6);
+            const end = toward(p2, c, SIZE * 0.6);
             // Soldats en blanc, mercenaires en or : « ⚔4+2M » (M en or).
             const main = `${a.kind === 'attack' ? '⚔' : ''}${a.soldiers}`;
-            const merc = a.mercs ? `+${a.mercs}M` : "";
+            const merc = a.mercs ? `+${a.mercs}M` : '';
             const w = 8 + (main.length + merc.length) * 5.6;
-            // Étiquette contre la pointe de la flèche (côté île visée), jamais sur une île traversée.
-            const back = Math.min(len / 2, SIZE * 0.6 + 22) / len;
-            const mx = p2.x - dx * back;
-            const my = p2.y - dy * back;
+            // Étiquette sur la flèche : au milieu entre deux voisines, vers la pointe pour une flèche courbée.
+            const tl = bend ? 0.72 : 0.5;
+            const mx = (1 - tl) ** 2 * start.x + 2 * tl * (1 - tl) * c.x + tl ** 2 * end.x;
+            const my = (1 - tl) ** 2 * start.y + 2 * tl * (1 - tl) * c.y + tl ** 2 * end.y;
             return (
               <g key={idx}>
-                <line
-                  x1={p1.x + dx * k}
-                  y1={p1.y + dy * k}
-                  x2={p2.x - dx * k}
-                  y2={p2.y - dy * k}
+                <path
+                  d={`M${start.x.toFixed(1)},${start.y.toFixed(1)} Q${c.x.toFixed(1)},${c.y.toFixed(1)} ${end.x.toFixed(1)},${end.y.toFixed(1)}`}
+                  fill="none"
                   className={`arrow arrow-${a.kind}`}
                   markerEnd={`url(#arrow-${a.kind})`}
                 />
