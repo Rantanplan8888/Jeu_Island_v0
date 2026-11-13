@@ -32,6 +32,10 @@ export function OrdersList({ state, orders, setOrders, onClose }: Props) {
         remove: () => setOrders({ ...o, attacks: o.attacks.filter((_, j) => j !== i) }),
       };
     }),
+    ...(o.spy !== undefined ? [{
+      text: `Espionner l'${islandName(o.spy)} (1 or)`,
+      remove: () => { const { spy: _, ...rest } = o; setOrders(rest); },
+    }] : []),
   ];
 
   return (

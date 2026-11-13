@@ -25,10 +25,15 @@ function game(): GameState {
 }
 
 describe('brouillard de guerre', () => {
-  it('voit tout à 1 case, l\'île sans défense ni bâtiments à 2 cases, rien au-delà', () => {
+  it('voit tout à 1 case, l\'île sans défense ni bâtiments à 2 cases, seulement le propriétaire au-delà', () => {
     const v = viewFor(game(), 'A');
     expect(v.viewer).toBe('A');
-    expect(Object.keys(v.islands).sort()).toEqual(['CA', 'N1', 'N2']);
+    expect(Object.keys(v.islands).sort()).toEqual(['CA', 'CB', 'N1', 'N2', 'N3']);
+    expect(v.islands.CB).toMatchObject({ owner: 'B', remote: true, hidden: true, soldiers: 0, isCapital: false, woodSymbol: false, goldSymbol: false });
+    expect(v.islands.N3).toMatchObject({ owner: null, remote: true });
+    expect(v.islands.N2!.remote).toBeUndefined();
+    const strict = viewFor(game(), 'A', makeRules({ fog: { fullRange: 1, partialRange: 2, ownersBeyond: false } }));
+    expect(Object.keys(strict.islands).sort()).toEqual(['CA', 'N1', 'N2']);
     expect(v.islands.N1!.soldiers).toBe(2);
     expect(v.islands.N1!.buildings).toHaveLength(1);
     expect(v.islands.N2!.hidden).toBe(true);
@@ -69,10 +74,38 @@ describe('brouillard de guerre', () => {
     expect(eventsFor(events, g, state, 'A').some((e) => e.kind === 'income' && e.player === 'B')).toBe(false);
   });
 
-  it('sur un vrai plateau, chaque joueur ne voit qu\'une partie de la carte', () => {
+  it('sur un vrai plateau, on voit toutes les îles mais le détail seulement près des siennes', () => {
     const g = createGame({ players: [1, 2, 3, 4].map((i) => ({ id: `P${i}`, name: `J${i}` })), seed: 3 });
     const v = viewFor(g, 'P1');
-    expect(Object.keys(v.islands).length).toBeLessThan(Object.keys(g.islands).length);
+    expect(Object.keys(v.islands)).toHaveLength(Object.keys(g.islands).length);
     expect(Object.values(v.islands).some((i) => i.owner && i.owner !== 'P1' && !i.hidden)).toBe(false);
+    expect(Object.values(v.islands).filter((i) => i.remote).length).toBeGreaterThan(0);
+  });
+
+  it('un espion (1 or) révèle à l\'aube la défense et les bâtiments d\'une île lointaine', () => {
+    const g = game();
+    g.islands.CB!.buildings.push({ type: 'tower', builtTurn: 0 });
+    expect(viewFor(g, 'A').islands.CB!.hidden).toBe(true);
+    const { state, events } = resolveTurn(g, { A: { spy: 'CB' } });
+    expect(state.players.A!.resources.gold).toBe(3 - 1 + 3); // espion payé, puis revenus de la capitale
+    const report = eventsFor(events, g, state, 'A').find((e) => e.kind === 'spied');
+    expect(report).toMatchObject({ kind: 'spied', islandId: 'CB', owner: 'B', soldiers: 3, defense: 9, buildings: ['tower'] });
+    const v = viewFor(state, 'A');
+    expect(v.islands.CB).toMatchObject({ soldiers: 3, isCapital: true });
+    expect(v.islands.CB!.hidden).toBeUndefined();
+    // B ne sait rien de l'espion de A.
+    expect(eventsFor(events, g, state, 'B').some((e) => e.kind === 'spied')).toBe(false);
+    expect(viewFor(state, 'B').spied).toEqual({});
+    // La nuit suivante, l'information n'est plus à jour : l'île redevient cachée.
+    expect(viewFor(resolveTurn(state, {}).state, 'A').islands.CB!.hidden).toBe(true);
+  });
+
+  it('espion refusé sur sa propre île ou sans or', () => {
+    const g = game();
+    g.players.A!.resources.gold = 0;
+    const r = resolveTurn(g, { A: { spy: 'CB' } });
+    expect(r.events.some((e) => e.kind === 'order_rejected' && e.player === 'A')).toBe(true);
+    const own = resolveTurn(game(), { A: { spy: 'CA' } });
+    expect(own.events.some((e) => e.kind === 'order_rejected')).toBe(true);
   });
 });

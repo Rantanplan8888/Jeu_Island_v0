@@ -38,9 +38,12 @@ export interface Rules {
   /**
    * Brouillard de guerre (null = carte entièrement visible). Jusqu'à `fullRange` cases
    * d'une de ses îles, on voit tout ; jusqu'à `partialRange`, on voit l'île, son propriétaire
-   * et ses symboles, mais pas ses soldats ni ses bâtiments ; au-delà, rien.
+   * et ses symboles, mais pas ses soldats ni ses bâtiments ; au-delà, seulement le propriétaire
+   * de chaque île si `ownersBeyond` est vrai, sinon rien.
    */
-  fog: { fullRange: number; partialRange: number } | null;
+  fog: { fullRange: number; partialRange: number; ownersBeyond: boolean } | null;
+  /** Coût d'un espion (une île révélée par tour, à l'aube). null = pas d'espion. */
+  spyCost: Resources | null;
   /** Nombre maximal de mercenaires par soldat dans une attaque (null = sans limite). */
   mercenariesPerSoldier: number | null;
   /**
@@ -81,7 +84,8 @@ export const DEFAULT_RULES: Rules = {
   secondaryForceShare: 0.5,
   attackerTieBreak: 'defender',
   mercenariesPerSoldier: 1,
-  fog: { fullRange: 1, partialRange: 2 },
+  spyCost: { gold: 1, wood: 0 },
+  fog: { fullRange: 1, partialRange: 2, ownersBeyond: true },
   incomeDecay: { threshold: 6, rate: 0.1 },
   occupationRequiresSoldier: true,
   buildings: {

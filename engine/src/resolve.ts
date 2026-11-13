@@ -78,6 +78,8 @@ export function resolveTurn(
   const reject = (player: PlayerId, reason: string) => events.push({ kind: 'order_rejected', player, reason });
   const arrived: Record<IslandId, number> = {};
   const departures: Departure[] = [];
+  const spies: { player: PlayerId; islandId: IslandId }[] = [];
+  state.spied = {};
   const playerIds = Object.keys(state.players).sort();
 
   // 1. Ordres de chaque joueur
@@ -142,6 +144,19 @@ export function resolveTurn(
       from.soldiers -= a.soldiers;
       departures.push({ player: pid, from: from.id, to: to.id, soldiers: a.soldiers, mercenaries: a.mercenaries, destroyBuilding: a.destroyBuilding });
     }
+  }
+
+  // Espions (un par joueur et par tour) : payés maintenant, rapport à l'aube.
+  for (const pid of playerIds) {
+    const player = state.players[pid]!;
+    const target = orders[pid]?.spy;
+    if (player.eliminated || target === undefined) continue;
+    const island = state.islands[target];
+    if (!rules.spyCost) { reject(pid, 'Les espions ne sont pas autorisés dans cette partie.'); continue; }
+    if (!island || island.owner === pid) { reject(pid, `Espion : cible ${target} invalide.`); continue; }
+    if (!canPay(player, rules.spyCost)) { reject(pid, 'Espion : or insuffisant.'); continue; }
+    pay(player, rules.spyCost);
+    spies.push({ player: pid, islandId: target });
   }
 
   // 2. Batailles simultanées
@@ -255,6 +270,16 @@ export function resolveTurn(
       island.soldiers += rules.barracksSoldiers;
       events.push({ kind: 'barracks', islandId: island.id, player: island.owner, soldiers: rules.barracksSoldiers });
     }
+  }
+
+  // Rapport des espions : l'île telle qu'elle est à l'aube.
+  for (const sp of spies) {
+    const island = state.islands[sp.islandId]!;
+    events.push({
+      kind: 'spied', player: sp.player, islandId: island.id, owner: island.owner, soldiers: island.soldiers,
+      defense: defenseOf(island, rules), buildings: island.buildings.map((b) => b.type),
+    });
+    (state.spied[sp.player] ??= []).push(island.id);
   }
 
   for (const pid of playerIds) {
