@@ -21,7 +21,7 @@ export function Help({ onClose }: { onClose: () => void }) {
           <p><b>Chiffre</b> = soldats sur l'île · <b>🛡</b> = défense totale (soldats + 3 pour le mur d'une capitale + 3 pour une tour).</p>
           <p><span className="dot" style={{ background: '#8b5a2b' }} /> symbole bois · <span className="dot" style={{ background: '#ffd23f' }} /> symbole or</p>
           <p>Bâtiments : ⛏️ mine · 🪓 scierie · ⛺ baraque · ⚓ port · 🏰 tour · 🎓 université (en transparence : en construction ce tour).</p>
-          <p>Sur tes îles, le chiffre au centre est le nombre de soldats présents maintenant ; une bulle <b>+2 −3 → 1</b> indique les soldats recrutés, ceux qui partent ce tour, et combien il en restera. Sur une flèche, près de sa pointe : <b>⚔3+2M</b> = attaque avec 3 soldats et 2 mercenaires.</p>
+          <p>Sur tes îles, le chiffre au centre est le nombre de soldats présents maintenant ; la petite bulle <b>→1</b> indique combien il en restera après tes ordres (recrues comprises, départs déduits). Sur une flèche, près de sa pointe : <b>⚔3</b> = attaque avec 3 soldats, <b style={{ color: 'var(--accent)' }}>+2M</b> (en or) = et 2 mercenaires (ils disparaissent après l'attaque).</p>
         </section>
 
         <section className="card">

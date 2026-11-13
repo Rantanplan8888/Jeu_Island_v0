@@ -132,9 +132,9 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
             const i = state.islands[id];
             if (!i || i.owner !== pid) return null;
             const { x, y } = toPixel(i.q, i.r);
-            // « +1 −4 → 0 » : recrues, départs, puis soldats qui resteront sur l'île.
-            const label = `${d.plus ? `+${d.plus}` : ''}${d.plus && d.minus ? ' ' : ''}${d.minus ? `−${d.minus}` : ''} → ${i.soldiers + d.plus - d.minus}`;
-            const w = 8 + label.length * 5.5;
+            // « →0 » : soldats qui resteront sur l'île après mes ordres (recrues comprises, départs déduits).
+            const label = `→${i.soldiers + d.plus - d.minus}`;
+            const w = 6 + label.length * 5.5;
             const cy = y - SIZE * 0.66;
             return (
               <g key={`d${id}`} className="troop-delta">
@@ -154,12 +154,14 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
             const dy = p2.y - p1.y;
             const len = Math.hypot(dx, dy) || 1;
             const k = (SIZE * 0.6) / len;
-            const label = `${a.kind === "attack" ? "⚔" : ""}${a.soldiers}${a.mercs ? `+${a.mercs}M` : ""}`;
+            // Soldats en blanc, mercenaires en or : « ⚔4+2M » (M en or).
+            const main = `${a.kind === 'attack' ? '⚔' : ''}${a.soldiers}`;
+            const merc = a.mercs ? `+${a.mercs}M` : "";
+            const w = 8 + (main.length + merc.length) * 5.6;
             // Étiquette contre la pointe de la flèche (côté île visée), jamais sur une île traversée.
             const back = Math.min(len / 2, SIZE * 0.6 + 22) / len;
             const mx = p2.x - dx * back;
             const my = p2.y - dy * back;
-            const w = 8 + label.length * 6;
             return (
               <g key={idx}>
                 <line
@@ -172,7 +174,7 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
                 />
                 <g className={`arrow-label arrow-label-${a.kind}`}>
                   <rect x={mx - w / 2} y={my - 7} width={w} height={14} rx={7} />
-                  <text x={mx} y={my + 3.5}>{label}</text>
+                  <text x={mx} y={my + 3.5}>{main}{merc && <tspan className="merc">{merc}</tspan>}</text>
                 </g>
               </g>
             );

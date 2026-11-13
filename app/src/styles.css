@@ -213,3 +213,5 @@ form.card .row input { width: 100%; }
 .arrow-label rect { fill: rgba(6, 30, 48, 0.92); stroke-width: 1.5; }
 .arrow-label-attack rect { stroke: #ff4d4d; }
 .arrow-label-move rect { stroke: #7dffa1; }
+.arrow-label .merc { fill: var(--accent); }
+.troop-delta text { font-size: 8px; }
