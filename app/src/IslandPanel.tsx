@@ -82,8 +82,11 @@ export function IslandPanel({ state, pid, orders, islandId, setOrders, onSend, o
         {island.remote ? 'Richesses inconnues' : <>Rapporte {single.gold} or / {single.wood} bois</>}
         {island.woodSymbol && island.goldSymbol ? ' · île luxuriante' : island.woodSymbol ? ' · symbole bois' : island.goldSymbol ? ' · symbole or' : ''}
       </p>
-      {island.buildings.length > 0 && (
-        <p>Bâtiments : {island.buildings.map((b) => buildingLabel(b.type)).join(', ')}</p>
+      {!island.hidden && (
+        <p>
+          Bâtiments : {island.buildings.length > 0 ? island.buildings.map((b) => buildingLabel(b.type)).join(', ') : 'aucun'}
+          {state.spied?.[pid]?.includes(islandId) && <><br /><small className="muted">Vu par ton espion cette nuit.</small></>}
+        </p>
       )}
 
       {!mine && (island.hidden || o.spy === islandId) && state.players[pid] && !state.players[pid]!.eliminated && (
