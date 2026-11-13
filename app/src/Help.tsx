@@ -18,8 +18,10 @@ export function Help({ onClose }: { onClose: () => void }) {
           <h2>Lire la carte</h2>
           <p><span className="dot" style={{ background: '#e4572e' }} /> Rond de couleur : île d'un joueur. ♛ = capitale.</p>
           <p><span className="dot" style={{ background: '#6c9a5a' }} /> Rond vert : île vierge, gardée par des soldats.</p>
-          <p><b>Chiffre</b> = soldats sur l'île · <b>🛡</b> = défense totale.</p>
-          <p><span className="dot" style={{ background: '#8b5a2b' }} /> symbole bois · <span className="dot" style={{ background: '#ffd23f' }} /> symbole or · ▫ bâtiment</p>
+          <p><b>Chiffre</b> = soldats sur l'île · <b>🛡</b> = défense totale (soldats + 3 pour le mur d'une capitale + 3 pour une tour).</p>
+          <p><span className="dot" style={{ background: '#8b5a2b' }} /> symbole bois · <span className="dot" style={{ background: '#ffd23f' }} /> symbole or</p>
+          <p>Bâtiments : ⛏️ mine · 🪓 scierie · ⛺ baraque · ⚓ port · 🏰 tour · 🎓 université (en transparence : en construction ce tour).</p>
+          <p>Sur tes îles, le chiffre au centre est le nombre de soldats présents maintenant ; la petite bulle <b>→1</b> indique combien il en restera après tes ordres (recrues comprises, départs déduits). Sur une flèche (courbée quand elle contourne une île) : <b>⚔3</b> = attaque avec 3 soldats, <b style={{ color: 'var(--accent)' }}>+2M</b> (en or) = et 2 mercenaires (ils disparaissent après l'attaque).</p>
         </section>
 
         <section className="card">
