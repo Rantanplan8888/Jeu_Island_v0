@@ -132,7 +132,8 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
             const i = state.islands[id];
             if (!i || i.owner !== pid) return null;
             const { x, y } = toPixel(i.q, i.r);
-            const label = `${d.plus ? `+${d.plus}` : ''}${d.plus && d.minus ? ' ' : ''}${d.minus ? `−${d.minus}` : ''}`;
+            // « +1 −4 → 0 » : recrues, départs, puis soldats qui resteront sur l'île.
+            const label = `${d.plus ? `+${d.plus}` : ''}${d.plus && d.minus ? ' ' : ''}${d.minus ? `−${d.minus}` : ''} → ${i.soldiers + d.plus - d.minus}`;
             const w = 8 + label.length * 5.5;
             const cy = y - SIZE * 0.66;
             return (
