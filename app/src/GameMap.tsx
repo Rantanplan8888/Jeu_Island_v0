@@ -155,7 +155,7 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
             const k = (SIZE * 0.6) / len;
             const label = `${a.kind === "attack" ? "⚔" : ""}${a.soldiers}${a.mercs ? `+${a.mercs}M` : ""}`;
             // Étiquette contre la pointe de la flèche (côté île visée), jamais sur une île traversée.
-            const back = Math.min(len / 2, SIZE * 0.6 + 14) / len;
+            const back = Math.min(len / 2, SIZE * 0.6 + 22) / len;
             const mx = p2.x - dx * back;
             const my = p2.y - dy * back;
             const w = 8 + label.length * 6;
