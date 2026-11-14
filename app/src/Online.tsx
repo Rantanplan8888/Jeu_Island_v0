@@ -1,7 +1,8 @@
 import type { GameState, PlayerOrders, TurnEvent } from '@island/engine';
 import { useCallback, useEffect, useState } from 'react';
-import { api, getSession, onSessionChange, signIn, signOut, signUp, type GameRow, type PlayerRow } from './api';
+import { api, getSession, onSessionChange, signIn, signOut, signUp, type ChatMessage, type GameRow, type PlayerRow } from './api';
 import { Chat, lastSeen } from './Chat';
+import { playerColor } from './format';
 import { OrdersScreen } from './OrdersScreen';
 import { Report } from './Report';
 import { emptyOrders } from './orders';
@@ -335,13 +336,18 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
     };
   }, [game.id, game.status, game.turn]);
 
-  // Messages non lus de la discussion : vérifiés toutes les 30 secondes, quand la discussion est fermée.
+  // Derniers messages de la discussion (aperçu sur la carte) et non-lus : vérifiés toutes les 30 secondes,
+  // quand la discussion est fermée et l'appli à l'écran.
+  const [recent, setRecent] = useState<ChatMessage[]>([]);
   useEffect(() => {
     if (chatOpen) { setUnread(0); return; }
     const load = () => {
       if (document.visibilityState !== 'visible') return;
-      const seen = lastSeen(game.id);
-      api.chat(game.id, seen || undefined).then((m) => setUnread(m.filter((x) => x.user_id !== me && (!seen || x.created_at > seen)).length)).catch(() => {});
+      api.chatRecent(game.id).then((m) => {
+        const seen = lastSeen(game.id);
+        setRecent(m.slice(-3));
+        setUnread(m.filter((x) => x.user_id !== me && (!seen || x.created_at > seen)).length);
+      }).catch(() => {});
     };
     load();
     const t = setInterval(load, 30_000);
@@ -351,6 +357,17 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       document.removeEventListener('visibilitychange', load);
     };
   }, [game.id, me, chatOpen]);
+
+  const chatPreview = recent.length > 0 && (
+    <button className="chat-preview" onClick={() => setChatOpen(true)} aria-label="Derniers messages : ouvrir la discussion">
+      {recent.map((m) => (
+        <span key={m.id} className="chat-preview-line">
+          <span className="dot" style={{ background: playerColor(state, m.user_id) }} />
+          <b>{m.user_id === me ? 'Toi' : state.players[m.user_id]?.name ?? '?'}</b> {m.body}
+        </span>
+      ))}
+    </button>
+  );
 
   const chatButton = (
     <button className="icon chat-btn" onClick={() => setChatOpen(true)} aria-label={unread ? `Discussion, ${unread} non lu(s)` : 'Discussion'}>
@@ -534,6 +551,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       onSubmit={submit}
       banner={banner}
       topAction={<><button className="icon" onClick={() => setView('report')} aria-label="Rapport du tour">☰</button>{chatButton}</>}
+      mapExtra={chatPreview}
     />
     </>
   );

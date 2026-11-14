@@ -229,6 +229,9 @@ export const api = {
     after
       ? rest<ChatMessage[]>(`messages?game_id=eq.${id}&created_at=gt.${encodeURIComponent(after)}&select=id,user_id,body,created_at&order=created_at.asc&limit=200`)
       : rest<ChatMessage[]>(`messages?game_id=eq.${id}&select=id,user_id,body,created_at&order=created_at.desc&limit=200`).then((m) => m.reverse()),
+  /** Les derniers messages (du plus ancien au plus récent), pour l'aperçu et la pastille de non-lus. */
+  chatRecent: (id: string, n = 20) =>
+    rest<ChatMessage[]>(`messages?game_id=eq.${id}&select=id,user_id,body,created_at&order=created_at.desc&limit=${n}`).then((m) => m.reverse()),
   sendChat: (id: string, body: string) =>
     rest<ChatMessage[]>('messages?select=id,user_id,body,created_at', {
       method: 'POST',
