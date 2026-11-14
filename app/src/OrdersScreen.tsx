@@ -20,10 +20,12 @@ interface Props {
   /** Bouton supplémentaire dans la barre du haut (retour, rapport…). */
   topAction?: ReactNode;
   readOnly?: boolean;
+  /** Encart en plus sur la carte (aperçu de la discussion). */
+  mapExtra?: ReactNode;
 }
 
 /** Écran principal : carte, panneau de l'île choisie, liste des ordres. Partagé entre mode local et en ligne. */
-export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSubmit, banner, topAction, readOnly }: Props) {
+export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSubmit, banner, topAction, readOnly, mapExtra }: Props) {
   const [selected, setSelected] = useState<IslandId | null>(null);
   const [targeting, setTargeting] = useState<IslandId | null>(null);
   const [sending, setSending] = useState<{ from: IslandId; to: IslandId; kind: TargetKind } | null>(null);
@@ -88,7 +90,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
       {targeting && <div className="hint">Touche une île en surbrillance : rouge pour attaquer, verte pour déplacer. Touche l'île de départ pour annuler.</div>}
 
       <GameMap state={state} selected={targeting ?? selected} targets={targets} orders={orders} pid={pid} onTap={tap}
-        corner={!readOnly && !me?.eliminated && <Budget state={state} pid={pid} orders={orders} />} />
+        corner={<>{!readOnly && !me?.eliminated && <Budget state={state} pid={pid} orders={orders} />}{mapExtra}</>} />
 
       {sending ? (
         <SendDialog state={state} pid={pid} orders={orders} {...sending} setOrders={setOrders} onDone={() => { setSending(null); setSelected(sending.from); }} />
