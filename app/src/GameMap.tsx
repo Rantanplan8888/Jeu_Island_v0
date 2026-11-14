@@ -1,5 +1,5 @@
 import { defenseOf, type BuildingType, type GameState, type IslandId, type PlayerId, type PlayerOrders } from '@island/engine';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { playerColor } from './format';
 import { normalize, type TargetKind } from './orders';
 
@@ -21,13 +21,20 @@ const BUILDING_SLOTS = [
 ] as const;
 const SQRT3 = Math.sqrt(3);
 
-function toPixel(q: number, r: number) {
-  return { x: SIZE * SQRT3 * (q + r / 2), y: SIZE * 1.5 * r };
+/** Position d'une île. `flip` couche la carte (axes échangés) pour mieux remplir un écran en hauteur. */
+function toPixel(q: number, r: number, flip = false) {
+  const x = SIZE * SQRT3 * (q + r / 2);
+  const y = SIZE * 1.5 * r;
+  return flip ? { x: y, y: x } : { x, y };
 }
 
-function hexPoints(cx: number, cy: number, s: number) {
+function screenArea() {
+  return { w: window.innerWidth, h: Math.max(200, window.innerHeight - 180) };
+}
+
+function hexPoints(cx: number, cy: number, s: number, flip = false) {
   return Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 180) * (60 * i - 30);
+    const a = (Math.PI / 180) * (60 * i - (flip ? 0 : 30));
     return `${(cx + s * Math.cos(a)).toFixed(1)},${(cy + s * Math.sin(a)).toFixed(1)}`;
   }).join(' ');
 }
@@ -48,14 +55,33 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
   const [zoom, setZoom] = useState(1);
   const islands = Object.values(state.islands);
 
-  const box = useMemo(() => {
-    const pts = islands.map((i) => toPixel(i.q, i.r));
-    const minX = Math.min(...pts.map((p) => p.x)) - SIZE * 1.2;
-    const maxX = Math.max(...pts.map((p) => p.x)) + SIZE * 1.2;
-    const minY = Math.min(...pts.map((p) => p.y)) - SIZE * 1.2;
-    const maxY = Math.max(...pts.map((p) => p.y)) + SIZE * 1.2;
-    return { minX, minY, w: maxX - minX, h: maxY - minY };
-  }, [islands]);
+  // Place disponible pour la carte, d'après la taille de l'écran (barre du haut, consigne et boutons du bas déduits).
+  // On ne mesure pas la zone elle-même : elle rétrécit quand un panneau s'ouvre, et la carte ne doit ni tourner ni rapetisser.
+  const [area, setArea] = useState(screenArea);
+  useEffect(() => {
+    const onResize = () => setArea((a) => { const n = screenArea(); return a.w === n.w && a.h === n.h ? a : n; });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const boxes = useMemo(() => {
+    const make = (flip: boolean) => {
+      const pts = Object.values(state.islands).map((i) => toPixel(i.q, i.r, flip));
+      const minX = Math.min(...pts.map((p) => p.x)) - SIZE * 1.2;
+      const maxX = Math.max(...pts.map((p) => p.x)) + SIZE * 1.2;
+      const minY = Math.min(...pts.map((p) => p.y)) - SIZE * 1.2;
+      const maxY = Math.max(...pts.map((p) => p.y)) + SIZE * 1.2;
+      return { minX, minY, w: maxX - minX, h: maxY - minY };
+    };
+    return { normal: make(false), flipped: make(true) };
+  }, [state.islands]);
+  // On garde le sens qui donne les plus grosses îles une fois la carte ajustée à l'écran.
+  const fit = (b: { w: number; h: number }) => (area.w && area.h ? Math.min(area.w / b.w, area.h / b.h) : 0);
+  const flip = fit(boxes.flipped) > fit(boxes.normal) * 1.05;
+  const box = flip ? boxes.flipped : boxes.normal;
+  const pos = (q: number, r: number) => toPixel(q, r, flip);
+  // Largeur de la carte au zoom 1 : elle tient entière dans la zone, en largeur comme en hauteur.
+  const baseWidth = area.w && area.h ? Math.min(area.w, (area.h * box.w) / box.h) : 0;
 
   const o = normalize(orders);
   const arrows = [
@@ -80,7 +106,7 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
         <svg
           className="map"
           viewBox={`${box.minX} ${box.minY} ${box.w} ${box.h}`}
-          style={{ width: `${zoom * 100}%`, aspectRatio: `${box.w} / ${box.h}` }}
+          style={{ width: baseWidth ? `${Math.round(baseWidth * zoom)}px` : `${zoom * 100}%`, aspectRatio: `${box.w} / ${box.h}` }}
           role="img"
           aria-label="Carte des îles"
         >
@@ -94,13 +120,13 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
           </defs>
 
           {islands.map((i) => {
-            const { x, y } = toPixel(i.q, i.r);
+            const { x, y } = pos(i.q, i.r);
             const target = targets?.get(i.id);
             const isSel = selected === i.id;
             const color = playerColor(state, i.owner);
             return (
               <g key={i.id} className={`island ${i.remote ? 'island-remote' : ''}`} onClick={() => onTap(i.id)}>
-                <polygon points={hexPoints(x, y, SIZE * 0.98)} className={`hex ${target ? `hex-${target}` : ''} ${i.remote ? 'hex-far' : i.hidden ? 'hex-fog' : ''}`} />
+                <polygon points={hexPoints(x, y, SIZE * 0.98, flip)} className={`hex ${target ? `hex-${target}` : ''} ${i.remote ? 'hex-far' : i.hidden ? 'hex-fog' : ''}`} />
                 <circle cx={x} cy={y} r={SIZE * 0.62} fill="#e7cf8f" />
                 <circle
                   cx={x}
@@ -110,7 +136,9 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
                   stroke={isSel ? '#fff' : i.isCapital ? '#222' : 'none'}
                   strokeWidth={isSel ? 4 : 2.5}
                 />
-                {i.isCapital && <text x={x} y={y - SIZE * 0.68} className="crown">♛</text>}
+                {i.isCapital && (flip
+                  ? <text x={x - SIZE * 0.82} y={y + 5} className="crown">♛</text>
+                  : <text x={x} y={y - SIZE * 0.68} className="crown">♛</text>)}
                 {!i.remote && <text x={x} y={y + 5} className="soldiers">{i.hidden ? '?' : i.soldiers}</text>}
                 {!i.remote && <text x={x} y={y + SIZE * 0.9} className="defense">🛡{i.hidden ? '?' : defenseOf(i)}</text>}
                 {i.woodSymbol && <circle cx={x - SIZE * 0.55} cy={y - SIZE * 0.4} r={5} fill="#8b5a2b" stroke="#fff" strokeWidth={1.5} />}
@@ -134,7 +162,7 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
           {pid && [...delta].map(([id, d]) => {
             const i = state.islands[id];
             if (!i || i.owner !== pid) return null;
-            const { x, y } = toPixel(i.q, i.r);
+            const { x, y } = pos(i.q, i.r);
             // « →0 » : soldats qui resteront sur l'île après mes ordres (recrues comprises, départs déduits).
             const label = `→${i.soldiers + d.plus - d.minus}`;
             const w = 6 + label.length * 5.5;
@@ -151,8 +179,8 @@ export function GameMap({ state, selected, targets, orders, pid, onTap, corner }
             const f = state.islands[a.from];
             const t = state.islands[a.to];
             if (!f || !t) return null;
-            const p1 = toPixel(f.q, f.r);
-            const p2 = toPixel(t.q, t.r);
+            const p1 = pos(f.q, f.r);
+            const p2 = pos(t.q, t.r);
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
             const len = Math.hypot(dx, dy) || 1;
