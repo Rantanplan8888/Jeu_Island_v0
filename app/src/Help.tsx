@@ -74,6 +74,7 @@ export function Help({ onClose }: { onClose: () => void }) {
           <h2>Capitales et fin de partie</h2>
           <p>Une capitale prise perd son mur et son statut ; son ancien propriétaire continue de jouer tant qu'il a une île. Celui qui possède toutes les capitales de départ gagne aussitôt.</p>
           <p>Toutes les batailles d'une nuit ont lieu en même temps : des soldats partis attaquer ne défendent plus leur île.</p>
+          <p>💬 <b>Discussion</b> (en haut de l'écran, ou dans le rapport) : un fil de messages visible par tous les joueurs de la partie. Une pastille rouge indique les messages non lus.</p>
           <p>🏳️ <b>Se rendre</b> (dans le rapport du tour) : tes îles redeviennent vierges avec leurs soldats et leurs bâtiments, et tu deviens spectateur.</p>
         </section>
 
