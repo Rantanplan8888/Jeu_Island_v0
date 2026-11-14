@@ -88,3 +88,21 @@ export function rejectedReasons(state: GameState, pid: PlayerId, orders: PlayerO
   const { events } = resolveTurn(state, { [pid]: orders });
   return events.flatMap((e) => (e.kind === 'order_rejected' && e.player === pid ? [e.reason] : []));
 }
+
+/**
+ * Bilan prévisionnel du tour : stock actuel, dépenses des ordres, revenus théoriques et solde.
+ * Les revenus viennent du moteur, en jouant mes seuls ordres (comme si personne d'autre n'agissait).
+ */
+export function forecast(state: GameState, pid: PlayerId, orders: PlayerOrders) {
+  const stock = { ...state.players[pid]!.resources };
+  const cost = spent(state, orders);
+  const { events } = resolveTurn(state, { [pid]: orders });
+  const inc = events.find((e) => e.kind === 'income' && e.player === pid);
+  const income = inc && inc.kind === 'income' ? { gold: inc.gold, wood: inc.wood } : { gold: 0, wood: 0 };
+  return {
+    stock,
+    cost,
+    income,
+    after: { gold: stock.gold - cost.gold + income.gold, wood: stock.wood - cost.wood + income.wood },
+  };
+}

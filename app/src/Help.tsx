@@ -45,6 +45,7 @@ export function Help({ onClose }: { onClose: () => void }) {
           <h2>Ressources</h2>
           <p>Île normale : 1 or + 1 bois par tour. Symbole bois : 3 bois. Symbole or : 3 or. Capitale : 3 + 3.</p>
           <p className="muted">Une île conquise ne rapporte rien le tour de sa conquête : elle produit à partir du tour suivant.</p>
+          <p>En haut à gauche de la carte, le <b>bilan du tour</b> se met à jour à chaque ordre : stock actuel, dépenses des ordres, revenus prévus et solde <b>après</b> le tour. Les revenus sont théoriques : ils supposent que personne ne te prend d'île cette nuit. Touche le bilan pour le replier.</p>
           <p>Au-delà de 6 îles, les revenus baissent : chaque île en plus retire 10 % (à 10 îles, tu touches 1 / 1,4 ≈ 71 % de tes revenus). Les îles comptent toujours pour la victoire.</p>
           <table className="help-table">
             <tbody>

@@ -6,7 +6,7 @@ import { Help } from './Help';
 import { IslandPanel, SendDialog } from './IslandPanel';
 import { OrdersList } from './OrdersList';
 import { playerColor, playerName } from './format';
-import { normalize, rejectedReasons, remaining, targetsFrom, type TargetKind } from './orders';
+import { forecast, normalize, rejectedReasons, remaining, targetsFrom, type TargetKind } from './orders';
 
 interface Props {
   state: GameState;
@@ -87,7 +87,8 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
       {banner}
       {targeting && <div className="hint">Touche une île en surbrillance : rouge pour attaquer, verte pour déplacer. Touche l'île de départ pour annuler.</div>}
 
-      <GameMap state={state} selected={targeting ?? selected} targets={targets} orders={orders} pid={pid} onTap={tap} />
+      <GameMap state={state} selected={targeting ?? selected} targets={targets} orders={orders} pid={pid} onTap={tap}
+        corner={!readOnly && !me?.eliminated && <Budget state={state} pid={pid} orders={orders} />} />
 
       {sending ? (
         <SendDialog state={state} pid={pid} orders={orders} {...sending} setOrders={setOrders} onDone={() => { setSending(null); setSelected(sending.from); }} />
@@ -153,5 +154,36 @@ function ConfirmOrders({ count, problems, left, onCancel, onConfirm }: {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Bilan du tour en haut à gauche de la carte ; se replie en une ligne d'un toucher. */
+function Budget({ state, pid, orders }: { state: GameState; pid: PlayerId; orders: PlayerOrders }) {
+  const f = useMemo(() => forecast(state, pid, orders), [state, pid, orders]);
+  const [open, setOpenState] = useState(() => {
+    try { return localStorage.getItem('island.budget') !== 'closed'; } catch { return true; }
+  });
+  const setOpen = (v: boolean) => {
+    try { localStorage.setItem('island.budget', v ? 'open' : 'closed'); } catch { /* rien */ }
+    setOpenState(v);
+  };
+  const signed = (n: number, sign: '+' | '−') => (n === 0 ? '0' : `${sign}${n}`);
+  const neg = f.after.gold < 0 || f.after.wood < 0;
+  return (
+    <button className={`budget${neg ? ' neg' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Bilan des ressources du tour">
+      {open ? (
+        <table>
+          <thead><tr><th /><th><GoldIcon size={14} /></th><th>🪵</th></tr></thead>
+          <tbody>
+            <tr><td>Stock</td><td>{f.stock.gold}</td><td>{f.stock.wood}</td></tr>
+            <tr className="minus"><td>Ordres</td><td>{signed(f.cost.gold, '−')}</td><td>{signed(f.cost.wood, '−')}</td></tr>
+            <tr className="plus"><td>Revenus</td><td>{signed(f.income.gold, '+')}</td><td>{signed(f.income.wood, '+')}</td></tr>
+            <tr className="total"><td>Après</td><td className={f.after.gold < 0 ? 'bad-n' : ''}>{f.after.gold}</td><td className={f.after.wood < 0 ? 'bad-n' : ''}>{f.after.wood}</td></tr>
+          </tbody>
+        </table>
+      ) : (
+        <span>Après : <GoldIcon size={14} /> {f.after.gold} · 🪵 {f.after.wood}</span>
+      )}
+    </button>
   );
 }
