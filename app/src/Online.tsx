@@ -400,6 +400,19 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
     }
   };
 
+  const surrender = async () => {
+    if (!confirm("Te rendre ? Toutes tes îles redeviennent vierges (elles gardent leurs soldats et leurs bâtiments) et tu ne joues plus. C'est définitif.")) return;
+    setBusy(true);
+    try {
+      await api.surrender(game.id);
+      reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (historyMap && viewState) {
     const label = game.status === 'finished' && viewTurn === lastTurn ? 'Carte finale' : `Carte après le tour ${viewTurn}`;
     return (
@@ -443,11 +456,19 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
           <button className="ghost wide" disabled={busy} onClick={resolveNow}>Résoudre le tour maintenant (hôte)</button>
         )}
         <button className="ghost wide" onClick={onBack}>← Mes parties</button>
+        {game.status === 'running' && state.players[me] && !state.players[me]!.eliminated && (
+          <button className="ghost wide danger" disabled={busy} onClick={surrender}>🏳️ Me rendre</button>
+        )}
       </Report>
     );
   }
 
   const readyCount = alive.filter((p) => readyIds.includes(p.id)).length;
+  // Joueurs qui n'ont pas encore validé leurs ordres (toi en premier).
+  const waiting = alive
+    .filter((p) => !readyIds.includes(p.id))
+    .sort((a, b) => (a.id === me ? -1 : b.id === me ? 1 : a.name.localeCompare(b.name)))
+    .map((p) => (p.id === me ? 'toi' : p.name));
   const banner = (
     <div className={`status status-${save.kind}`}>
       <div>
@@ -459,6 +480,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       </div>
       <div className="status-sub">
         Prêts : {readyCount}/{alive.length}
+        {waiting.length > 0 && ` · On attend : ${waiting.join(', ')}`}
         {game.deadline ? ` · Fin du tour : ${formatDeadline(game.deadline)}` : ''}
       </div>
     </div>

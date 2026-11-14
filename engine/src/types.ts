@@ -44,6 +44,10 @@ export interface Player {
   name: string;
   resources: Resources;
   eliminated: boolean;
+  /** Tour pendant lequel le joueur s'est rendu (absent s'il ne s'est pas rendu). */
+  surrenderedTurn?: number;
+  /** Nombre d'îles rendues lors de la reddition. */
+  surrenderedIslands?: number;
 }
 
 export interface GameState {
@@ -124,6 +128,7 @@ export type TurnEvent =
     }
   | { kind: 'barracks'; islandId: IslandId; player: PlayerId; soldiers: number }
   | { kind: 'eliminated'; player: PlayerId }
+  | { kind: 'surrendered'; player: PlayerId; islands: number }
   | { kind: 'game_over'; winner: PlayerId | null };
 
 export interface TurnResult {

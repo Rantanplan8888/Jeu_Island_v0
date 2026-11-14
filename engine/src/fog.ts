@@ -89,6 +89,7 @@ export function eventsFor(
       case 'battle':
         return e.defender === viewer || e.attackers.some((a) => a.player === viewer) || sees(e.islandId);
       case 'eliminated':
+      case 'surrendered':
       case 'game_over':
         return true;
       default:
