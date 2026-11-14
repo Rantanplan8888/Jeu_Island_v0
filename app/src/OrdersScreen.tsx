@@ -1,5 +1,6 @@
 import type { GameState, IslandId, PlayerId, PlayerOrders } from '@island/engine';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { isPlaying, onSoundChange, resumeOnFirstTouch, setSound } from './ambience';
 import { GameMap } from './GameMap';
 import { GoldIcon } from './icons';
 import { Help } from './Help';
@@ -73,6 +74,11 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
   };
 
   const me = state.players[pid];
+  const [sound, setSoundState] = useState(isPlaying);
+  useEffect(() => {
+    resumeOnFirstTouch();
+    return onSoundChange(setSoundState);
+  }, []);
 
   return (
     <main className="play">
@@ -83,6 +89,7 @@ export function OrdersScreen({ state, pid, orders, setOrders, submitLabel, onSub
         <span className="muted">Tour {state.turn}</span>
         <span className="res" title="Or"><GoldIcon /> {left.gold}</span>
         <span className="res" title="Bois">🪵 {left.wood}</span>
+        <button className="icon" onClick={() => setSound(!sound)} aria-label={sound ? 'Couper la musique' : 'Mettre la musique'}>{sound ? '🔊' : '🔇'}</button>
         <button className="icon" onClick={() => setShowHelp(true)} aria-label="Comment jouer">?</button>
       </header>
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
