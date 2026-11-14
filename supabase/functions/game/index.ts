@@ -4,6 +4,7 @@
 //   { action: "start",   gameId }  -> l'hôte lance la partie (génère le plateau)
 //   { action: "resolve", gameId }  -> l'hôte force la résolution du tour en cours
 //   { action: "ready",   gameId }  -> un joueur se déclare prêt ; si tous les joueurs en jeu le sont, le tour est résolu
+//   { action: "surrender", gameId } -> un joueur se rend : ses îles redeviennent vierges (soldats gardés)
 //   { action: "view", gameId, turn? } -> la partie vue par le joueur (brouillard de guerre) ;
 //                                    avec turn : le rapport de ce tour (événements visibles + carte après le tour)
 //   { action: "resolve-due" }      -> appelé vers minuit (en-tête x-cron-secret) : résout les parties dont l'échéance est passée
@@ -11,7 +12,7 @@
 // Les joueurs ne lisent jamais l'état complet de la partie : seule cette fonction y a accès.
 //
 // Le moteur de règles est copié dans ../_shared/engine au moment du déploiement (voir .github/workflows/deploy.yml).
-import { createGame, eventsFor, resolveTurn, viewFor, type GameState, type PlayerOrders, type TurnEvent } from '../_shared/engine/index.ts';
+import { createGame, eventsFor, resolveTurn, surrender, viewFor, type GameState, type PlayerOrders, type TurnEvent } from '../_shared/engine/index.ts';
 import { nextDeadline } from './deadline.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -143,6 +144,35 @@ async function onReady(gameId: string, userId: string) {
   return { ...res, resolved: res.ok, ready: alive.length, total: alive.length };
 }
 
+/**
+ * Un joueur se rend : ses îles redeviennent vierges tout de suite. S'il ne reste qu'un joueur,
+ * ou si tous les joueurs restants sont déjà prêts, le tour est résolu aussitôt.
+ */
+async function onSurrender(gameId: string, userId: string) {
+  const g = await loadGame(gameId);
+  if (g.status !== 'running' || !g.state) throw new HttpError(409, "La partie n'est pas en cours");
+  const p = g.state.players[userId];
+  if (!p) throw new HttpError(403, 'Tu ne joues pas dans cette partie');
+  if (p.eliminated) throw new HttpError(409, 'Tu ne joues déjà plus dans cette partie');
+  const state = surrender(g.state, userId);
+  const updated = await db<GameRow[]>(`games?id=eq.${g.id}&turn=eq.${g.turn}&status=eq.running`, {
+    method: 'PATCH',
+    body: JSON.stringify({ state }),
+  });
+  if (!updated.length) throw new HttpError(409, 'Le tour vient de changer, réessaie');
+  // Ses ordres du tour ne servent plus.
+  await db(`orders?game_id=eq.${g.id}&user_id=eq.${userId}&turn=eq.${g.turn}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+  const g2 = { ...g, state };
+  const alive = Object.values(state.players).filter((x) => !x.eliminated).map((x) => x.id);
+  const rows = await db<{ user_id: string }[]>(`orders?game_id=eq.${g.id}&turn=eq.${g.turn}&ready=is.true&select=user_id`);
+  const ready = new Set(rows.map((r) => r.user_id));
+  if (alive.length <= 1 || alive.every((id) => ready.has(id))) {
+    const res = await resolveGame(g2);
+    return { ok: true, resolved: res.ok };
+  }
+  return { ok: true, resolved: false };
+}
+
 /** La partie (ou le rapport d'un tour) telle que la voit un joueur. */
 async function view(gameId: string, userId: string, turn: number | null) {
   const g = await loadGame(gameId);
@@ -200,6 +230,8 @@ Deno.serve(async (req) => {
         if (turn !== null && !Number.isInteger(turn)) throw new HttpError(400, 'Tour invalide');
         return json(await view(String(body.gameId), await currentUser(req), turn));
       }
+      case 'surrender':
+        return json(await onSurrender(String(body.gameId), await currentUser(req)));
       case 'ready':
         return json(await onReady(String(body.gameId), await currentUser(req)));
       case 'start':

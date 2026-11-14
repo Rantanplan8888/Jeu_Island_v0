@@ -82,6 +82,12 @@ export function resolveTurn(
   state.spied = {};
   const playerIds = Object.keys(state.players).sort();
 
+  // 0. Redditions pendant ce tour (déjà appliquées par `surrender`) : annoncées dans le rapport.
+  for (const pid of playerIds) {
+    const p = state.players[pid]!;
+    if (p.surrenderedTurn === state.turn) events.push({ kind: 'surrendered', player: pid, islands: p.surrenderedIslands ?? 0 });
+  }
+
   // 1. Ordres de chaque joueur
   for (const pid of playerIds) {
     const player = state.players[pid]!;
@@ -375,4 +381,28 @@ export function checkWinner(state: GameState): PlayerId | null | undefined {
     return best!.id;
   }
   return undefined;
+}
+
+/**
+ * Un joueur se rend, immédiatement (sans attendre la fin du tour) :
+ * ses îles redeviennent vierges en gardant leurs soldats et leurs bâtiments,
+ * sa capitale perd son mur, et il devient spectateur. La reddition est annoncée
+ * dans le rapport du tour en cours. La victoire éventuelle est constatée à la résolution.
+ */
+export function surrender(input: GameState, playerId: PlayerId): GameState {
+  const state: GameState = structuredClone(input);
+  const player = state.players[playerId];
+  if (!player || player.eliminated || state.finished) throw new Error('Ce joueur ne peut pas se rendre.');
+  let count = 0;
+  for (const island of Object.values(state.islands)) {
+    if (island.owner !== playerId) continue;
+    island.owner = null;
+    island.isCapital = false;
+    count++;
+  }
+  player.eliminated = true;
+  player.surrenderedTurn = state.turn;
+  player.surrenderedIslands = count;
+  if (state.spied) delete state.spied[playerId];
+  return state;
 }

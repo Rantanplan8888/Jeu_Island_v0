@@ -182,3 +182,24 @@ describe('création de partie', () => {
     expect(r2.state.players.A!.resources.gold).toBe(6 + 3 + 3);
   });
 });
+
+describe('reddition', () => {
+  it('les îles redeviennent vierges avec leurs soldats, la partie se termine à la résolution', async () => {
+    const { surrender } = await import('../src/index.ts');
+    const s = game([capital('CA', 0, 0, 'A'), island('N', 1, 0, { owner: 'B', soldiers: 4, buildings: [{ type: 'tower', builtTurn: 0 }] }), capital('CB', 5, 0, 'B')]);
+    const after = surrender(s, 'B');
+    expect(after.islands.CB!.owner).toBeNull();
+    expect(after.islands.CB!.isCapital).toBe(false);
+    expect(after.islands.CB!.soldiers).toBe(s.islands.CB!.soldiers);
+    expect(after.islands.N!.owner).toBeNull();
+    expect(after.islands.N!.soldiers).toBe(4);
+    expect(after.islands.N!.buildings).toHaveLength(1);
+    expect(after.players.B!.eliminated).toBe(true);
+    expect(s.players.B!.eliminated).toBe(false); // l'état d'origine n'est pas modifié
+    expect(() => surrender(after, 'B')).toThrow();
+    const r = resolveTurn(after, {});
+    expect(r.events.some((e) => e.kind === 'surrendered' && e.player === 'B' && e.islands === 2)).toBe(true);
+    expect(r.state.finished).toBe(true);
+    expect(r.state.winner).toBe('A');
+  });
+});

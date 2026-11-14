@@ -215,3 +215,4 @@ form.card .row input { width: 100%; }
 .arrow-label-move rect { stroke: #7dffa1; }
 .arrow-label .merc { fill: var(--accent); }
 .troop-delta text { font-size: 8px; }
+button.danger { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); }

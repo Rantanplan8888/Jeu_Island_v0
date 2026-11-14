@@ -213,6 +213,8 @@ export const api = {
     rpc<(string | Record<string, string>)[]>('ready_players', { p_game: id }).then((rows) =>
       (rows ?? []).map((r) => (typeof r === 'string' ? r : String(Object.values(r)[0]))),
     ),
+  /** Se rendre : ses îles redeviennent vierges ; le tour est résolu si plus personne n'est attendu. */
+  surrender: (id: string) => fn<{ ok: boolean; resolved: boolean }>('surrender', { gameId: id }),
   /** Prévient le serveur qu'on est prêt : il résout le tour si tout le monde l'est. */
   notifyReady: (id: string) => fn<{ ok: boolean; resolved: boolean; ready: number; total: number }>('ready', { gameId: id }),
   /** Rapport d'un tour, avec la carte après ce tour (absente pour les tours joués avant l'historique). */

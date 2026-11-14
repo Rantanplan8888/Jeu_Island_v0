@@ -69,6 +69,13 @@ export function Help({ onClose }: { onClose: () => void }) {
           <p className="muted">Si deux joueurs attaquent la même île la même nuit, leurs forces s'additionnent en partie ; le plus fort prend l'île. S'ils sont à égalité, l'attaque échoue et l'île reste à son propriétaire.</p>
         </section>
 
+        <section className="card">
+          <h2>Capitales et fin de partie</h2>
+          <p>Une capitale prise perd son mur et son statut ; son ancien propriétaire continue de jouer tant qu'il a une île. Celui qui possède toutes les capitales de départ gagne aussitôt.</p>
+          <p>Toutes les batailles d'une nuit ont lieu en même temps : des soldats partis attaquer ne défendent plus leur île.</p>
+          <p>🏳️ <b>Se rendre</b> (dans le rapport du tour) : tes îles redeviennent vierges avec leurs soldats et leurs bâtiments, et tu deviens spectateur.</p>
+        </section>
+
         <button className="primary wide" onClick={onClose}>C'est parti !</button>
       </main>
     </div>
