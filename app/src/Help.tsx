@@ -75,6 +75,7 @@ export function Help({ onClose }: { onClose: () => void }) {
           <p>Une capitale prise perd son mur et son statut ; son ancien propriétaire continue de jouer tant qu'il a une île. Celui qui possède toutes les capitales de départ gagne aussitôt.</p>
           <p>Toutes les batailles d'une nuit ont lieu en même temps : des soldats partis attaquer ne défendent plus leur île.</p>
           <p>💬 <b>Discussion</b> (en haut de l'écran, ou dans le rapport) : un fil de messages visible par tous les joueurs de la partie. Une pastille rouge indique les messages non lus, et les 3 derniers messages s'affichent en bas à gauche de la carte (touche-les pour ouvrir la discussion).</p>
+          <p>🔇 / 🔊 (en haut) : coupe ou met la musique d'ambiance (vagues et notes calmes, créées par l'appli elle-même). Elle s'arrête quand l'appli n'est plus à l'écran.</p>
           <p>🏳️ <b>Se rendre</b> (dans le rapport du tour) : tes îles redeviennent vierges avec leurs soldats et leurs bâtiments, et tu deviens spectateur.</p>
         </section>
 

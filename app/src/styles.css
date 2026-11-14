@@ -267,3 +267,9 @@ button.danger { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); }
 }
 .chat-preview-line { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chat-preview-line .dot { width: 7px; height: 7px; border-width: 1px; margin-right: 4px; vertical-align: 0; }
+/* Petits écrans (≤ 380 px) : barre du haut plus serrée, pour que tout tienne sans déborder. */
+@media (max-width: 380px) {
+  .topbar { gap: 6px; padding-left: 10px; padding-right: 10px; }
+  .topbar .icon { padding: 4px 4px; }
+  .topbar b { min-width: 2.5em; }
+}
