@@ -1,6 +1,7 @@
 import type { GameState, PlayerOrders, TurnEvent } from '@island/engine';
 import { useCallback, useEffect, useState } from 'react';
 import { api, getSession, onSessionChange, signIn, signOut, signUp, type GameRow, type PlayerRow } from './api';
+import { Chat, lastSeen } from './Chat';
 import { OrdersScreen } from './OrdersScreen';
 import { Report } from './Report';
 import { emptyOrders } from './orders';
@@ -315,6 +316,8 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
   const [historyMap, setHistoryMap] = useState(false);
   const [busy, setBusy] = useState(false);
   const [readyIds, setReadyIds] = useState<string[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const isHost = game.host === me;
   const alive = Object.values(state.players).filter((p) => !p.eliminated);
 
@@ -331,6 +334,30 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [game.id, game.status, game.turn]);
+
+  // Messages non lus de la discussion : vérifiés toutes les 30 secondes, quand la discussion est fermée.
+  useEffect(() => {
+    if (chatOpen) { setUnread(0); return; }
+    const load = () => {
+      if (document.visibilityState !== 'visible') return;
+      const seen = lastSeen(game.id);
+      api.chat(game.id, seen || undefined).then((m) => setUnread(m.filter((x) => x.user_id !== me && (!seen || x.created_at > seen)).length)).catch(() => {});
+    };
+    load();
+    const t = setInterval(load, 30_000);
+    document.addEventListener('visibilitychange', load);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', load);
+    };
+  }, [game.id, me, chatOpen]);
+
+  const chatButton = (
+    <button className="icon chat-btn" onClick={() => setChatOpen(true)} aria-label={unread ? `Discussion, ${unread} non lu(s)` : 'Discussion'}>
+      💬{unread > 0 && <span className="chat-badge">{unread > 9 ? '9+' : unread}</span>}
+    </button>
+  );
+  const chat = chatOpen && <Chat gameId={game.id} state={state} me={me} onClose={() => setChatOpen(false)} />;
 
   useEffect(() => {
     let draft: PlayerOrders | null = null;
@@ -416,6 +443,8 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
   if (historyMap && viewState) {
     const label = game.status === 'finished' && viewTurn === lastTurn ? 'Carte finale' : `Carte après le tour ${viewTurn}`;
     return (
+      <>
+      {chat}
       <OrdersScreen
         state={viewState}
         pid={me}
@@ -427,6 +456,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
         banner={<div className="status status-saved">{label} (consultation)</div>}
         topAction={<button className="icon" onClick={() => setHistoryMap(false)} aria-label="Retour au rapport">←</button>}
       />
+      </>
     );
   }
 
@@ -436,6 +466,8 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       : game.status === 'finished' && viewTurn === lastTurn ? `Fin de la partie · tour ${viewTurn}`
       : `Résultat du tour ${viewTurn}`;
     return (
+      <>
+      {chat}
       <Report state={viewState ?? state} events={report?.events ?? []} title={title} showRanking={viewState !== null}>
         {lastTurn > 1 && (
           <div className="turn-nav">
@@ -451,6 +483,9 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
         ) : (
           viewTurn >= 1 && <p className="muted">La carte de ce tour n'a pas été conservée (tour joué avant l'ajout de l'historique).</p>
         )}
+        <button className="ghost wide chat-btn" onClick={() => setChatOpen(true)}>
+          💬 Discussion{unread > 0 && <span className="chat-badge">{unread > 9 ? '9+' : unread}</span>}
+        </button>
         {game.status !== 'finished' && <button className="primary wide" onClick={() => { setViewTurn(lastTurn); setView('map'); }}>Donner mes ordres du tour {game.turn}</button>}
         {isHost && game.status === 'running' && (
           <button className="ghost wide" disabled={busy} onClick={resolveNow}>Résoudre le tour maintenant (hôte)</button>
@@ -460,6 +495,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
           <button className="ghost wide danger" disabled={busy} onClick={surrender}>🏳️ Me rendre</button>
         )}
       </Report>
+      </>
     );
   }
 
@@ -487,6 +523,8 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
   );
 
   return (
+    <>
+    {chat}
     <OrdersScreen
       state={state}
       pid={me}
@@ -495,7 +533,8 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       submitLabel={save.kind === 'ready' ? 'Revalider ✓' : 'Je suis prêt ✓'}
       onSubmit={submit}
       banner={banner}
-      topAction={<button className="icon" onClick={() => setView('report')} aria-label="Rapport du tour">☰</button>}
+      topAction={<><button className="icon" onClick={() => setView('report')} aria-label="Rapport du tour">☰</button>{chatButton}</>}
     />
+    </>
   );
 }

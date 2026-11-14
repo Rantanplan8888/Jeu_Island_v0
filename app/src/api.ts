@@ -172,6 +172,13 @@ export interface PlayerRow {
   name: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+}
+
 export const api = {
   myGames: () =>
     rest<{ games: Omit<GameRow, 'state'> }[]>(
@@ -217,6 +224,17 @@ export const api = {
   surrender: (id: string) => fn<{ ok: boolean; resolved: boolean }>('surrender', { gameId: id }),
   /** Prévient le serveur qu'on est prêt : il résout le tour si tout le monde l'est. */
   notifyReady: (id: string) => fn<{ ok: boolean; resolved: boolean; ready: number; total: number }>('ready', { gameId: id }),
+  /** Messages de la discussion de la partie, après une date donnée (les 200 derniers sinon). */
+  chat: (id: string, after?: string) =>
+    after
+      ? rest<ChatMessage[]>(`messages?game_id=eq.${id}&created_at=gt.${encodeURIComponent(after)}&select=id,user_id,body,created_at&order=created_at.asc&limit=200`)
+      : rest<ChatMessage[]>(`messages?game_id=eq.${id}&select=id,user_id,body,created_at&order=created_at.desc&limit=200`).then((m) => m.reverse()),
+  sendChat: (id: string, body: string) =>
+    rest<ChatMessage[]>('messages?select=id,user_id,body,created_at', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ game_id: id, body }),
+    }).then((rows) => rows[0]!),
   /** Rapport d'un tour, avec la carte après ce tour (absente pour les tours joués avant l'historique). */
   report: (id: string, turn: number) =>
     fn<{ events: TurnEvent[]; state: GameState | null }>('view', { gameId: id, turn }),
