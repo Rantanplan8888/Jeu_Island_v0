@@ -112,8 +112,8 @@ input[type='number'] { max-width: 90px; flex: none; }
 .hint { text-align: center; color: var(--muted); padding: 8px 16px; margin: 0; font-size: 0.9rem; }
 
 .map-wrap { position: relative; flex: 1; min-height: 0; }
-.map-scroll { position: absolute; inset: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
-.map { display: block; min-width: 100%; max-height: none; }
+.map-scroll { position: absolute; inset: 0; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; }
+.map { display: block; flex: none; margin: auto; max-height: none; }
 .zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
 .zoom button { width: 42px; height: 42px; padding: 0; font-size: 1.3rem; background: var(--card); border: 1px solid var(--line); }
 
