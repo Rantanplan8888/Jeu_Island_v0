@@ -216,3 +216,20 @@ form.card .row input { width: 100%; }
 .arrow-label .merc { fill: var(--accent); }
 .troop-delta text { font-size: 8px; }
 button.danger { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); }
+
+/* Bilan des ressources du tour, coin haut gauche de la carte. */
+.budget {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  padding: 6px 9px; border-radius: 10px; text-align: left;
+  background: var(--card); border: 1px solid var(--line);
+  font-size: 0.75rem; font-weight: 400; line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.budget table { border-collapse: collapse; }
+.budget th { font-weight: 400; padding: 0 0 2px; text-align: right; }
+.budget td { padding: 1px 0; text-align: right; min-width: 2.4em; }
+.budget td:first-child { text-align: left; color: var(--muted); min-width: 0; padding-right: 6px; }
+.budget .minus td:not(:first-child) { color: var(--bad); }
+.budget .plus td:not(:first-child) { color: var(--good); }
+.budget .total td { border-top: 1px solid var(--line); font-weight: 700; padding-top: 3px; }
+.budget .bad-n, .budget.neg span { color: var(--bad); }

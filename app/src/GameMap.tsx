@@ -1,5 +1,5 @@
 import { defenseOf, type BuildingType, type GameState, type IslandId, type PlayerId, type PlayerOrders } from '@island/engine';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { playerColor } from './format';
 import { normalize, type TargetKind } from './orders';
 
@@ -40,9 +40,11 @@ interface Props {
   /** Joueur qui regarde la carte : ses ordres en attente sont affichés sur ses îles. */
   pid?: PlayerId;
   onTap: (id: IslandId) => void;
+  /** Encart posé dans le coin haut gauche de la carte (bilan des ressources). */
+  corner?: ReactNode;
 }
 
-export function GameMap({ state, selected, targets, orders, pid, onTap }: Props) {
+export function GameMap({ state, selected, targets, orders, pid, onTap, corner }: Props) {
   const [zoom, setZoom] = useState(1);
   const islands = Object.values(state.islands);
 
@@ -73,6 +75,7 @@ export function GameMap({ state, selected, targets, orders, pid, onTap }: Props)
 
   return (
     <div className="map-wrap">
+      {corner}
       <div className="map-scroll">
         <svg
           className="map"
