@@ -1,11 +1,11 @@
 /**
- * Ambiance sonore générée sur place (aucun fichier, aucune connexion) : houle filtrée et quelques notes calmes.
+ * Ambiance sonore générée sur place (aucun fichier, aucune connexion) : houle filtrée et quelques notes de violoncelle.
  * Coupée par défaut ; le son est suspendu dès que l'appli n'est plus à l'écran, pour ménager la batterie.
  */
 
 const PREF_KEY = 'island.sound';
-// Gamme pentatonique de ré majeur, deux octaves : rien ne sonne faux, quel que soit l'ordre des notes.
-const NOTES = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.25, 739.99, 880.0];
+// Gamme pentatonique de ré majeur dans le registre du violoncelle : rien ne sonne faux, quel que soit l'ordre.
+const NOTES = [73.42, 92.5, 110.0, 123.47, 146.83, 164.81, 185.0, 220.0, 246.94, 293.66];
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -74,29 +74,64 @@ function build() {
   delay.connect(master);
 }
 
+/**
+ * Une note « à l'archet », façon violoncelle : deux dents de scie à peine désaccordées, adoucies par un filtre,
+ * une attaque lente, un vibrato qui arrive après le début de la note et une longue extinction.
+ */
 function playNote() {
   if (!ctx || !echo || !playing) return;
   const c = ctx;
-  const t = c.currentTime;
+  const t = c.currentTime + 0.05;
   const freq = NOTES[Math.floor(Math.random() * NOTES.length)]!;
-  const osc = c.createOscillator();
-  osc.type = 'triangle';
-  osc.frequency.value = freq;
+  const len = 2.5 + Math.random() * 2; // durée de l'archet
+  const end = t + len + 2.5;
+
+  const filter = c.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.Q.value = 0.7;
+  filter.frequency.setValueAtTime(freq * 2, t);
+  filter.frequency.linearRampToValueAtTime(Math.min(freq * 6, 1400), t + 0.8);
+  filter.frequency.linearRampToValueAtTime(freq * 2.5, t + len);
+  const body = c.createBiquadFilter(); // résonance du corps de l'instrument
+  body.type = 'peaking';
+  body.frequency.value = 260;
+  body.Q.value = 1.2;
+  body.gain.value = 5;
+
   const g = c.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.07, t + 0.08);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5);
-  osc.connect(g).connect(echo);
-  osc.start(t);
-  osc.stop(t + 3.6);
+  g.gain.linearRampToValueAtTime(0.07, t + 0.7);
+  g.gain.linearRampToValueAtTime(0.055, t + len);
+  g.gain.exponentialRampToValueAtTime(0.0001, end);
+
+  const vib = c.createOscillator();
+  vib.frequency.value = 5 + Math.random();
+  const vibDepth = c.createGain();
+  vibDepth.gain.setValueAtTime(0, t);
+  vibDepth.gain.linearRampToValueAtTime(freq * 0.006, t + 1.2);
+  vib.connect(vibDepth);
+
+  for (const detune of [-4, 5]) {
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    osc.detune.value = detune;
+    vibDepth.connect(osc.frequency);
+    osc.connect(filter);
+    osc.start(t);
+    osc.stop(end);
+  }
+  filter.connect(body).connect(g).connect(echo);
+  vib.start(t);
+  vib.stop(end);
 }
 
 function scheduleNotes() {
   if (noteTimer) clearTimeout(noteTimer);
   if (!playing || document.visibilityState !== 'visible') return;
   playNote();
-  // Parfois deux notes rapprochées, souvent un long silence.
-  noteTimer = setTimeout(scheduleNotes, Math.random() < 0.25 ? 600 : 2500 + Math.random() * 4500);
+  // Parfois deux notes qui se chevauchent, souvent un long silence.
+  noteTimer = setTimeout(scheduleNotes, Math.random() < 0.2 ? 1500 : 4000 + Math.random() * 5000);
 }
 
 function onVisibility() {
