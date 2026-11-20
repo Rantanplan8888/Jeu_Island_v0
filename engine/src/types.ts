@@ -62,6 +62,8 @@ export interface GameState {
   viewer?: PlayerId;
   /** Îles espionnées pendant la dernière nuit, par joueur : visibles en entier jusqu'à la nuit suivante. */
   spied?: Record<PlayerId, IslandId[]>;
+  /** Annonces à publier dans le prochain rapport (puis effacées). */
+  announcements?: string[];
 }
 
 export interface RecruitOrder {
@@ -129,6 +131,8 @@ export type TurnEvent =
   | { kind: 'barracks'; islandId: IslandId; player: PlayerId; soldiers: number }
   | { kind: 'eliminated'; player: PlayerId }
   | { kind: 'surrendered'; player: PlayerId; islands: number }
+  /** Annonce de l'hôte ou d'un événement exceptionnel, lue par tous dans le rapport. */
+  | { kind: 'announcement'; text: string }
   | { kind: 'game_over'; winner: PlayerId | null };
 
 export interface TurnResult {

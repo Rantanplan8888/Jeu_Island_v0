@@ -63,6 +63,8 @@ export function describe(state: GameState, e: TurnEvent): string | null {
       return `${name(e.player)} n'a plus d'île : éliminé(e).`;
     case 'surrendered':
       return `🏳️ ${name(e.player)} s'est rendu(e) : ses ${e.islands} île(s) redeviennent vierges.`;
+    case 'announcement':
+      return `📣 ${e.text}`;
     case 'game_over':
       return e.winner ? `Partie terminée : ${name(e.winner)} l'emporte !` : 'Partie terminée : égalité.';
     case 'order_rejected':

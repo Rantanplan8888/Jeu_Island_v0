@@ -1,0 +1,57 @@
+name: 'Admin : rébellion'
+
+# Lancement manuel uniquement (onglet Actions → « Admin : rébellion » → Run workflow).
+# Les armées d'un joueur rallient un autre joueur avec toutes leurs îles sauf une.
+# Laisser « essai à blanc » coché pour voir ce qui serait fait sans rien modifier.
+on:
+  workflow_dispatch:
+    inputs:
+      partie:
+        description: Nom exact de la partie en cours
+        required: true
+      ralliements:
+        description: 'Couleurs, ex. bleu>vert,jaune>orange'
+        required: true
+      message:
+        description: Annonce (facultatif, sinon un texte de rébellion est écrit automatiquement)
+        required: false
+        default: ''
+      essai:
+        description: Essai à blanc (ne modifie rien)
+        type: boolean
+        default: true
+
+concurrency: deploy-supabase
+
+jobs:
+  rebellion:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: zodxkoiuvewnpzcjtbiu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0
+      - name: Récupérer la clé serveur (jamais affichée)
+        run: |
+          KEYS=$(supabase projects api-keys --project-ref "$PROJECT_REF" -o json --reveal 2>/dev/null || supabase projects api-keys --project-ref "$PROJECT_REF" -o json)
+          KEY=$(echo "$KEYS" | node -e '
+            const k = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            const pick = k.find((x) => (x.api_key || "").startsWith("sb_secret_")) || k.find((x) => x.name === "service_role");
+            if (!pick || !pick.api_key) { console.error("Clé serveur introuvable : " + k.map((x) => x.name).join(", ")); process.exit(1); }
+            process.stdout.write(pick.api_key);')
+          echo "::add-mask::$KEY"
+          echo "SERVICE_KEY=$KEY" >> "$GITHUB_ENV"
+      - name: Rébellion
+        env:
+          SUPABASE_URL: https://zodxkoiuvewnpzcjtbiu.supabase.co
+          PARTIE: ${{ inputs.partie }}
+          RALLIEMENTS: ${{ inputs.ralliements }}
+          MESSAGE: ${{ inputs.message }}
+          DRY_RUN: ${{ inputs.essai }}
+        run: node scripts/rebellion.mjs

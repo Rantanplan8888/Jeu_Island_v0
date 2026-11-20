@@ -82,7 +82,10 @@ export function resolveTurn(
   state.spied = {};
   const playerIds = Object.keys(state.players).sort();
 
-  // 0. Redditions pendant ce tour (déjà appliquées par `surrender`) : annoncées dans le rapport.
+  // 0. Annonces en attente, puis redditions pendant ce tour (déjà appliquées par `surrender`).
+  for (const text of state.announcements ?? []) events.push({ kind: 'announcement', text });
+  delete state.announcements;
+  // Redditions pendant ce tour (déjà appliquées par `surrender`) : annoncées dans le rapport.
   for (const pid of playerIds) {
     const p = state.players[pid]!;
     if (p.surrenderedTurn === state.turn) events.push({ kind: 'surrendered', player: pid, islands: p.surrenderedIslands ?? 0 });
