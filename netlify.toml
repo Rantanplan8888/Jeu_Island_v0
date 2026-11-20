@@ -1,6 +1,9 @@
 [build]
   command = "npm run build"
   publish = "app/dist"
+  # Économie de crédits Netlify : pas de nouvelle mise en ligne si rien n'a changé dans ce qui compose l'appli
+  # (une modif du serveur Supabase, des scripts d'admin ou de la doc ne coûte donc rien).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- app engine package.json package-lock.json netlify.toml"
 
 [build.environment]
   NODE_VERSION = "22"
