@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, resolveTurn, type GameState, type Island } from '../src/index.ts';
+import { createGame, eventsFor, resolveTurn, type GameState, type Island } from '../src/index.ts';
 
 function island(id: string, q: number, r: number, extra: Partial<Island> = {}): Island {
   return {
@@ -201,5 +201,19 @@ describe('reddition', () => {
     expect(r.events.some((e) => e.kind === 'surrendered' && e.player === 'B' && e.islands === 2)).toBe(true);
     expect(r.state.finished).toBe(true);
     expect(r.state.winner).toBe('A');
+  });
+});
+
+describe('annonces', () => {
+  it('publie les annonces en attente dans le rapport suivant, une seule fois', () => {
+    const s0 = createGame({ players: [{ id: 'A', name: 'A' }, { id: 'B', name: 'B' }], maxTurns: 10, seed: 1 });
+    s0.announcements = ['Grève générale !'];
+    const r1 = resolveTurn(s0, {});
+    expect(r1.events.filter((e) => e.kind === 'announcement')).toEqual([{ kind: 'announcement', text: 'Grève générale !' }]);
+    expect(r1.state.announcements).toBeUndefined();
+    expect(s0.announcements).toEqual(['Grève générale !']);
+    expect(eventsFor(r1.events, s0, r1.state, 'B').some((e) => e.kind === 'announcement')).toBe(true);
+    const r2 = resolveTurn(r1.state, {});
+    expect(r2.events.some((e) => e.kind === 'announcement')).toBe(false);
   });
 });
