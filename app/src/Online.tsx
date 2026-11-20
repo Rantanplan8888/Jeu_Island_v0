@@ -398,7 +398,7 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       <div className="modal card announcement news" role="dialog" aria-modal="true" aria-label="Annonce" onClick={(e) => e.stopPropagation()}>
         {news.map((n, i) => (
           <div key={i}>
-            {n.image && /^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(n.image) && <img className="announcement-img" src={n.image} alt="" />}
+            {n.image && /^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(n.image) && <img className="announcement-img" src={import.meta.env.BASE_URL + n.image.slice(1)} alt="" />}
             <p>📣 {n.text}</p>
           </div>
         ))}
