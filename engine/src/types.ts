@@ -50,6 +50,12 @@ export interface Player {
   surrenderedIslands?: number;
 }
 
+/** Annonce avec une image facultative (chemin dans l'appli, ex. /annonces/rebellion.jpg). */
+export interface Announcement {
+  text: string;
+  image?: string;
+}
+
 export interface GameState {
   /** Numéro du tour en cours de saisie (commence à 1). */
   turn: number;
@@ -63,7 +69,7 @@ export interface GameState {
   /** Îles espionnées pendant la dernière nuit, par joueur : visibles en entier jusqu'à la nuit suivante. */
   spied?: Record<PlayerId, IslandId[]>;
   /** Annonces à publier dans le prochain rapport (puis effacées). */
-  announcements?: string[];
+  announcements?: (string | Announcement)[];
 }
 
 export interface RecruitOrder {
@@ -132,7 +138,7 @@ export type TurnEvent =
   | { kind: 'eliminated'; player: PlayerId }
   | { kind: 'surrendered'; player: PlayerId; islands: number }
   /** Annonce de l'hôte ou d'un événement exceptionnel, lue par tous dans le rapport. */
-  | { kind: 'announcement'; text: string }
+  | { kind: 'announcement'; text: string; image?: string }
   | { kind: 'game_over'; winner: PlayerId | null };
 
 export interface TurnResult {

@@ -276,3 +276,4 @@ button.danger { color: var(--bad); border-color: rgba(255, 107, 107, 0.4); }
 /* Annonce exceptionnelle en tête du rapport */
 .card.announcement { border: 2px solid var(--accent); background: rgba(255, 183, 3, 0.14); font-size: 1.05rem; font-weight: 600; }
 .card.announcement p { margin: 6px 0; white-space: pre-line; }
+.announcement-img { display: block; width: 100%; height: auto; border-radius: 10px; margin: 4px 0 8px; }

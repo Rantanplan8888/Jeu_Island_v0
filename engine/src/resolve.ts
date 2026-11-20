@@ -83,7 +83,9 @@ export function resolveTurn(
   const playerIds = Object.keys(state.players).sort();
 
   // 0. Annonces en attente, puis redditions pendant ce tour (déjà appliquées par `surrender`).
-  for (const text of state.announcements ?? []) events.push({ kind: 'announcement', text });
+  for (const a of state.announcements ?? []) {
+    events.push(typeof a === 'string' ? { kind: 'announcement', text: a } : { kind: 'announcement', ...a });
+  }
   delete state.announcements;
   // Redditions pendant ce tour (déjà appliquées par `surrender`) : annoncées dans le rapport.
   for (const pid of playerIds) {

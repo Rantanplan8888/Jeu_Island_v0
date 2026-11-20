@@ -24,7 +24,14 @@ export function Report({ state, events, title, children, showRanking = true }: P
       <h1>{title}</h1>
       {news.length > 0 && (
         <section className="card announcement">
-          {news.map((e, i) => <p key={i}>{describe(state, e)}</p>)}
+          {news.map((e, i) => (
+            <div key={i}>
+              {e.kind === 'announcement' && e.image && /^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(e.image) && (
+                <img className="announcement-img" src={e.image} alt="" loading="lazy" />
+              )}
+              <p>{describe(state, e)}</p>
+            </div>
+          ))}
         </section>
       )}
       <section className="card">

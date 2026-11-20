@@ -5,10 +5,13 @@
  *
  * Lancé par le workflow « Admin : rébellion » (GitHub Actions, déclenchement manuel) avec la clé serveur.
  * Variables : SUPABASE_URL, SERVICE_KEY, PARTIE (nom exact), RALLIEMENTS (« bleu>vert,jaune>orange »),
- *             MESSAGE (facultatif, remplace l'annonce par défaut), DRY_RUN (« true » = n'écrit rien).
+ *             MESSAGE (facultatif, remplace l'annonce par défaut), IMAGE (facultatif, ex. /annonces/rebellion.jpg),
+ *             DRY_RUN (« true » = n'écrit rien).
+ * Sans RALLIEMENTS : remplace seulement l'annonce (en attente et dans le dernier rapport) par MESSAGE + IMAGE.
  */
 
-const { SUPABASE_URL, SERVICE_KEY, PARTIE, RALLIEMENTS, MESSAGE = '', DRY_RUN = 'true' } = process.env;
+const { SUPABASE_URL, SERVICE_KEY, PARTIE, RALLIEMENTS, MESSAGE = '', IMAGE = '', DRY_RUN = 'true' } = process.env;
+if (IMAGE && !/^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(IMAGE)) { console.error('❌ IMAGE doit ressembler à /annonces/nom.jpg'); process.exit(1); }
 const dryRun = DRY_RUN !== 'false';
 
 // Mêmes couleurs que l'appli (app/src/format.ts), dans le même ordre.
@@ -64,6 +67,26 @@ const byColor = (nom) => {
   if (found.length !== 1) fail(`Couleur « ${nom} » : ${found.length} joueur(s) correspondant(s).`);
   return found[0];
 };
+// Mode « annonce seulement » : on remplace le texte (et l'image) de l'annonce, sans toucher à la carte.
+if (!(RALLIEMENTS ?? '').trim()) {
+  if (!MESSAGE.trim()) fail('Sans ralliement, il faut un MESSAGE.');
+  const ann = IMAGE ? { text: MESSAGE.trim(), image: IMAGE } : { text: MESSAGE.trim() };
+  console.log(`Nouvelle annonce${IMAGE ? ` (image ${IMAGE})` : ''} :\n  📣 ${ann.text}`);
+  if (dryRun) { console.log('Essai à blanc (dry run) : rien n\'a été modifié.'); process.exit(0); }
+  state.announcements = [ann];
+  const up = await rest(`games?id=eq.${game.id}&turn=eq.${game.turn}&status=eq.running`, { method: 'PATCH', body: JSON.stringify({ state }) });
+  if (!up.length) fail('Le tour a changé pendant l\'opération : relance le workflow.');
+  console.log('✓ Annonce du prochain rapport remplacée.');
+  const lastTurn = game.turn - 1;
+  const reports = lastTurn >= 1 ? await rest(`turn_reports?game_id=eq.${game.id}&turn=eq.${lastTurn}&select=events`) : [];
+  if (reports.length === 1) {
+    const events = [{ kind: 'announcement', ...ann }, ...(reports[0].events ?? []).filter((e) => e.kind !== 'announcement')];
+    await rest(`turn_reports?game_id=eq.${game.id}&turn=eq.${lastTurn}`, { method: 'PATCH', body: JSON.stringify({ events }) });
+    console.log(`✓ Annonce du rapport du tour ${lastTurn} remplacée.`);
+  }
+  process.exit(0);
+}
+
 const rallies = (RALLIEMENTS ?? '').split(',').filter((s) => s.trim()).map((pair) => {
   const [from, to] = pair.split('>');
   if (!from || !to) fail(`Ralliement mal écrit : « ${pair} » (attendu : couleur>couleur).`);
@@ -98,9 +121,9 @@ for (const { rebel, ally } of rallies) {
       `Il ne reste à ${rebelName} qu'une seule île, et quelques fidèles.`,
   );
 }
-const announcements = MESSAGE.trim() ? [MESSAGE.trim()] : lines;
+const announcements = (MESSAGE.trim() ? [MESSAGE.trim()] : lines).map((text, i) => (IMAGE && i === 0 ? { text, image: IMAGE } : text));
 console.log('Annonce :');
-for (const a of announcements) console.log(`  📣 ${a}`);
+for (const a of announcements) console.log(`  📣 ${typeof a === 'string' ? a : `${a.text} [${a.image}]`}`);
 
 if (dryRun) {
   console.log('Essai à blanc (dry run) : rien n\'a été modifié.');
@@ -120,7 +143,7 @@ const lastTurn = game.turn - 1;
 if (lastTurn >= 1) {
   const reports = await rest(`turn_reports?game_id=eq.${game.id}&turn=eq.${lastTurn}&select=events`);
   if (reports.length === 1) {
-    const events = [...announcements.map((text) => ({ kind: 'announcement', text })), ...(reports[0].events ?? [])];
+    const events = [...announcements.map((a) => ({ kind: 'announcement', ...(typeof a === 'string' ? { text: a } : a) })), ...(reports[0].events ?? [])];
     await rest(`turn_reports?game_id=eq.${game.id}&turn=eq.${lastTurn}`, { method: 'PATCH', body: JSON.stringify({ events }) });
     console.log(`✓ Annonce ajoutée au rapport du tour ${lastTurn}.`);
   }

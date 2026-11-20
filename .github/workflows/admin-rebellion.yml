@@ -10,10 +10,15 @@ on:
         description: Nom exact de la partie en cours
         required: true
       ralliements:
-        description: 'Couleurs, ex. bleu>vert,jaune>orange'
-        required: true
+        description: 'Couleurs, ex. bleu>vert,jaune>orange (vide = changer seulement le texte et l''image de l''annonce)'
+        required: false
+        default: ''
       message:
         description: Annonce (facultatif, sinon un texte de rébellion est écrit automatiquement)
+        required: false
+        default: ''
+      image:
+        description: 'Image de l''annonce, ex. /annonces/rebellion.jpg (facultatif)'
         required: false
         default: ''
       essai:
@@ -53,5 +58,6 @@ jobs:
           PARTIE: ${{ inputs.partie }}
           RALLIEMENTS: ${{ inputs.ralliements }}
           MESSAGE: ${{ inputs.message }}
+          IMAGE: ${{ inputs.image }}
           DRY_RUN: ${{ inputs.essai }}
         run: node scripts/rebellion.mjs
