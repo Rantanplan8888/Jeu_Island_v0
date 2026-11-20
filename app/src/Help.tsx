@@ -65,7 +65,8 @@ export function Help({ onClose }: { onClose: () => void }) {
           <p>Pas plus de mercenaires que de soldats dans une attaque. Pour prendre l'île, il faut qu'au moins un soldat survive pour l'occuper : sinon les défenseurs sont tués mais l'île ne change pas de main.</p>
           <p>Défense = soldats + 3 pour le mur d'une capitale + 3 pour une tour.</p>
           <p>Il faut être <b>strictement plus fort</b>. Le vainqueur perd autant de force que la défense (1 de moins s'il avait le double). Une attaque ratée : tous les attaquants meurent.</p>
-          <p className="muted">Exemple : 6 soldats contre une défense de 4 → victoire, il reste 2 soldats sur l'île.</p>
+          <p>Après une victoire, la force restante redevient des soldats, sans dépasser le nombre de soldats envoyés : les mercenaires encaissent donc les pertes en premier, puis disparaissent.</p>
+          <p className="muted">Exemple : 6 soldats contre une défense de 4 → victoire, il reste 2 soldats sur l'île. Avec 5 soldats + 1 mercenaire (force 8, le double de 4) : pertes 3, force restante 5 → les 5 soldats occupent l'île.</p>
           <p>Portée 1 : îles voisines. Portée 2 : +1 or par unité, gratuit avec un port.</p>
           <p className="muted">Si deux joueurs attaquent la même île la même nuit, leurs forces s'additionnent en partie ; le plus fort prend l'île. S'ils sont à égalité, l'attaque échoue et l'île reste à son propriétaire.</p>
         </section>
