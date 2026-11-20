@@ -217,3 +217,12 @@ describe('annonces', () => {
     expect(r2.events.some((e) => e.kind === 'announcement')).toBe(false);
   });
 });
+
+describe('annonces avec image', () => {
+  it('garde le chemin de l\'image dans l\'événement', () => {
+    const s0 = createGame({ players: [{ id: 'A', name: 'A' }, { id: 'B', name: 'B' }], maxTurns: 10, seed: 1 });
+    s0.announcements = [{ text: 'Rébellion !', image: '/annonces/rebellion.jpg' }];
+    const r1 = resolveTurn(s0, {});
+    expect(r1.events.find((e) => e.kind === 'announcement')).toEqual({ kind: 'announcement', text: 'Rébellion !', image: '/annonces/rebellion.jpg' });
+  });
+});
