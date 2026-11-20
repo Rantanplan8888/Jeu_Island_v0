@@ -1,6 +1,6 @@
 name: Mettre en ligne (GitHub Pages)
 
-# Publie l'appli sur https://rantanplan8888.github.io/jeu_island_v0/ à chaque changement de l'appli sur main.
+# Publie l'appli sur https://rantanplan8888.github.io/Jeu_Island_v0/ à chaque changement de l'appli sur main.
 # Prérequis (une fois) : Settings > Pages > Source = « GitHub Actions ».
 on:
   push:
