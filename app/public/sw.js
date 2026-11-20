@@ -3,7 +3,7 @@
 const CACHE = 'island-v1';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon.svg'])));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './manifest.webmanifest', './icon.svg'])));
   self.skipWaiting();
 });
 
@@ -25,6 +25,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE).then((c) => c.put(event.request, copy));
         return res;
       })
-      .catch(() => caches.match(event.request).then((r) => r || caches.match('/'))),
+      .catch(() => caches.match(event.request).then((r) => r || caches.match('./'))),
   );
 });

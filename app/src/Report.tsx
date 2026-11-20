@@ -27,7 +27,7 @@ export function Report({ state, events, title, children, showRanking = true }: P
           {news.map((e, i) => (
             <div key={i}>
               {e.kind === 'announcement' && e.image && /^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(e.image) && (
-                <img className="announcement-img" src={e.image} alt="" loading="lazy" />
+                <img className="announcement-img" src={import.meta.env.BASE_URL + e.image.slice(1)} alt="" loading="lazy" />
               )}
               <p>{describe(state, e)}</p>
             </div>
