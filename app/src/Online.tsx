@@ -374,7 +374,39 @@ function Playing({ game, me, onBack, reload }: { game: GameRow; me: string; onBa
       💬{unread > 0 && <span className="chat-badge">{unread > 9 ? '9+' : unread}</span>}
     </button>
   );
-  const chat = chatOpen && <Chat gameId={game.id} state={state} me={me} onClose={() => setChatOpen(false)} />;
+  const chatPanel = chatOpen && <Chat gameId={game.id} state={state} me={me} onClose={() => setChatOpen(false)} />;
+
+  // Annonce exceptionnelle du dernier rapport : montrée une fois, en fenêtre, à l'ouverture de la partie.
+  const [news, setNews] = useState<{ text: string; image?: string }[]>([]);
+  const newsKey = (items: { text: string }[]) => `island.news.${game.id}.${items.map((n) => n.text).join('|').length}.${items[0]?.text.slice(0, 40) ?? ''}`;
+  useEffect(() => {
+    if (game.turn < 2) return;
+    api.report(game.id, game.turn - 1).then((r) => {
+      const items = r.events.flatMap((e) => (e.kind === 'announcement' ? [{ text: e.text, image: e.image }] : []));
+      if (!items.length) return;
+      try { if (localStorage.getItem(newsKey(items))) return; } catch { /* rien */ }
+      setNews(items);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.id, game.turn]);
+  const closeNews = () => {
+    try { localStorage.setItem(newsKey(news), '1'); } catch { /* rien */ }
+    setNews([]);
+  };
+  const newsPopup = news.length > 0 && (
+    <div className="modal-back news-back" onClick={closeNews}>
+      <div className="modal card announcement news" role="dialog" aria-modal="true" aria-label="Annonce" onClick={(e) => e.stopPropagation()}>
+        {news.map((n, i) => (
+          <div key={i}>
+            {n.image && /^\/annonces\/[\w-]+\.(jpg|png|webp)$/.test(n.image) && <img className="announcement-img" src={n.image} alt="" />}
+            <p>📣 {n.text}</p>
+          </div>
+        ))}
+        <button className="primary wide" onClick={closeNews}>Compris !</button>
+      </div>
+    </div>
+  );
+  const chat = <>{chatPanel}{newsPopup}</>;
 
   useEffect(() => {
     let draft: PlayerOrders | null = null;
